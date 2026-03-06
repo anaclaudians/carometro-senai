@@ -209,6 +209,26 @@
         display: none !important;
     }
 }
+      /* Forçar cores de fundo na impressão/PDF */
+@media print {
+    .badge-icon {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+/* Estilo fixo para garantir que as letras das tags apareçam no PDF */
+.badge-icon {
+    display: inline-flex !important;
+    width: 18px !important;
+    height: 18px !important;
+    color: white !important;
+    border-radius: 4px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+}
     </style>
 </head>
 <body class="bg-gray-100 pb-10">
@@ -387,51 +407,78 @@ async function gerarPDF() {
     const botao = event.currentTarget;
     const turma = document.getElementById('selectTurma').value || "GERAL";
     
-    botao.innerText = "PREPARANDO DOCUMENTO...";
+    botao.innerText = "A GERAR DOCUMENTO...";
     botao.disabled = true;
 
-    // Criamos um container invisível apenas para o PDF
+    // Criar um container temporário formatado para A4
     const printArea = document.createElement('div');
-    printArea.style.padding = "20px";
-    printArea.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E30613; padding-bottom: 10px; margin-bottom: 20px;">
+    printArea.style.width = "180mm"; // Largura útil do A4
+    printArea.style.margin = "0 auto";
+    printArea.style.fontFamily = "sans-serif";
+
+    // Cabeçalho Profissional
+    let htmlHeader = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #E30613; padding-bottom: 10px; margin-bottom: 20px;">
             <div>
-                <h1 style="color: #E30613; font-size: 24px; font-weight: 900; margin: 0;">SENAI</h1>
-                <p style="font-size: 12px; color: #666; margin: 0;">CARÔMETRO OFICIAL DE ALUNOS</p>
+                <h1 style="color: #E30613; font-size: 28px; font-weight: 900; margin: 0; letter-spacing: -1px;">SENAI</h1>
+                <p style="font-size: 10px; color: #444; margin: 0; font-weight: bold; text-transform: uppercase;">Carómetro Oficial de Alunos</p>
             </div>
             <div style="text-align: right;">
-                <p style="font-size: 14px; font-weight: bold; margin: 0;">TURMA: ${turma}</p>
-                <p style="font-size: 10px; color: #999; margin: 0;">Gerado em: ${new Date().toLocaleString()}</p>
+                <p style="font-size: 14px; font-weight: 800; margin: 0; color: #1a1a1a;">TURMA: ${turma}</p>
+                <p style="font-size: 9px; color: #777; margin: 0;">Data: ${new Date().toLocaleString('pt-PT')}</p>
             </div>
         </div>
-        <div id="pdf-content" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-            ${gridOriginal.innerHTML}
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
     `;
 
-    // Ajustes de estilo específicos para o PDF
-    const cards = printArea.querySelectorAll('.aluno-card');
-    cards.forEach(card => {
-        card.style.boxShadow = "none";
-        card.style.border = "1px solid #eee";
-        card.style.breakInside = "avoid"; // Evita cortar o aluno entre páginas
-        // Remove botões de edição se existirem
-        const btn = card.querySelector('.btn-edit-float');
-        if(btn) btn.remove();
-    });
+    // Processar cada card para o PDF
+    const cards = Array.from(gridOriginal.querySelectorAll('.aluno-card'));
+    let htmlContent = cards.map(card => {
+        const nome = card.querySelector('.aluno-nome').innerText;
+        const foto = card.querySelector('.foto-redonda').src;
+        const badges = card.querySelector('.badge-group').innerHTML;
+        const isEvadido = card.classList.contains('is-evadido') || card.innerHTML.includes('EVADIDO');
 
+        return `
+            <div style="border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; position: relative; background: #fff; page-break-inside: avoid; height: 180px; display: flex; flex-direction: column; align-items: center;">
+                <img src="${foto}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid ${isEvadido ? '#ccc' : '#E30613'}; margin-bottom: 8px; ${isEvadido ? 'filter: grayscale(1); opacity: 0.5;' : ''}">
+                
+                <div style="font-size: 9px; font-weight: 800; color: #1a1a1a; text-transform: uppercase; line-height: 1.1; margin-bottom: 5px; height: 2.2em; overflow: hidden;">
+                    ${nome}
+                </div>
+
+                <div style="display: flex; gap: 3px; justify-content: center; margin-top: auto;">
+                    ${badges}
+                </div>
+
+                ${isEvadido ? `
+                    <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: rgba(0,0,0,0.8); color: white; font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 3px; z-index: 10;">
+                        EVADIDO
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    printArea.innerHTML = htmlHeader + htmlContent + `</div>`;
+
+    // Configuração do html2pdf
     const opt = {
-        margin: [15, 10, 15, 10],
+        margin: [10, 10, 10, 10],
         filename: `Carometro_SENAI_${turma}.pdf`,
         image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { 
+            scale: 3, // Aumentamos a escala para as fotos ficarem nítidas
+            useCORS: true, 
+            letterRendering: true 
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
         await html2pdf().set(opt).from(printArea).save();
     } catch (e) {
-        console.error(e);
+        console.error("Erro no PDF:", e);
     } finally {
         botao.innerHTML = '<i class="fa fa-file-pdf"></i> GERAR PDF';
         botao.disabled = false;
@@ -483,6 +530,7 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
 
 
