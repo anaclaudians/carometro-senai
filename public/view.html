@@ -1,201 +1,162 @@
-<header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
-    <div class="flex items-center gap-4">
-        <span class="font-black text-2xl tracking-tighter">SENAI</span>
-        <h1 class="text-sm font-light border-l pl-4 border-white/30">Consulta de Alunos</h1>
-    </div>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENAI - Dashboard</title>
     
-    <div class="flex gap-3">
-        <button onclick="abrirModalSenha()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
-            <i class="fa fa-key"></i> SENHA
-        </button>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --senai-red: #E30613;
+            --senai-dark: #1a1a1a;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+
+        /* Estilo dos Cards */
+        .aluno-card {
+            background: white; border-radius: 20px; padding: 1.5rem 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0,0,0,0.05); display: flex;
+            flex-direction: column; align-items: center; position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); cursor: pointer;
+        }
+        .aluno-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+            border-color: var(--senai-red); 
+        }
+
+        .foto-redonda {
+            width: 100px; height: 100px; border-radius: 50%;
+            object-fit: cover; border: 3px solid white;
+            box-shadow: 0 0 0 2px var(--senai-red); background-color: #f1f5f9;
+        }
+
+        /* Selo de Evadido */
+        .status-overlay {
+            position: absolute; inset: 0; background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(2px); display: flex; align-items: center;
+            justify-content: center; border-radius: 20px; z-index: 5;
+        }
+        .status-tag {
+            background: #000; color: #fff; font-size: 10px; font-weight: 900;
+            padding: 6px 12px; border-radius: 4px; transform: rotate(-12deg);
+        }
+
+        /* Badges */
+        .badge-icon { 
+            display: inline-flex; width: 20px; height: 20px; 
+            font-size: 10px; font-weight: bold; color: white; 
+            border-radius: 5px; justify-content: center; align-items: center; 
+        }
+
+        /* Forçar cores que o Tailwind pode ignorar no JS */
+        .bg-blue-600 { background-color: #2563eb !important; }
+        .bg-purple-600 { background-color: #9333ea !important; }
+        .bg-green-600 { background-color: #16a34a !important; }
+        .bg-orange-600 { background-color: #ea580c !important; }
+        .bg-yellow-500 { background-color: #eab308 !important; }
+    </style>
+</head>
+<body class="pb-10">
+
+    <header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <span class="font-black text-2xl tracking-tighter">SENAI</span>
+            <h1 class="text-sm font-light border-l pl-4 border-white/30">Consulta de Alunos</h1>
+        </div>
         
-        <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
-            <i class="fa fa-file-pdf"></i> GERAR PDF
-        </button>
-    </div>
-</header>
-<style>:root {
-    --senai-red: #E30613;
-    --senai-dark: #1a1a1a;
-    --senai-gray: #f4f4f4;
-}
+        <div class="flex gap-3">
+            <button onclick="abrirModalSenha()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+                <i class="fa fa-key"></i> SENHA
+            </button>
+            <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
+                <i class="fa fa-file-pdf"></i> GERAR PDF
+            </button>
+        </div>
+    </header>
 
-/* Reset e Body */
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #f9fafb;
-}
-
-/* Header Estilizado */
-header {
-    background-color: var(--senai-red);
-    box-shadow: 0 4px 15px rgba(227, 6, 19, 0.2);
-}
-
-/* Grid e Cards de Alunos */
-#alunoGrid {
-    display: grid;
-    gap: 1.5rem;
-    padding: 1rem;
-}
-
-.aluno-card {
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-}
-
-.aluno-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    border-color: var(--senai-red);
-}
-
-/* Estilo das Fotos */
-.foto-redonda {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid white;
-    box-shadow: 0 0 0 2px var(--senai-red);
-    background-color: #f1f5f9;
-}
-
-/* Selo de Evadido */
-.status-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 20px;
-    z-index: 5;
-}
-
-.status-tag {
-    background: #000;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 900;
-    padding: 6px 12px;
-    border-radius: 4px;
-    transform: rotate(-12deg);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-
-/* Badges de Cores (Tags) */
-.badge-group { display: flex; gap: 4px; justify-content: center; margin-top: 10px; }
-.badge-icon { 
-    display: inline-flex; width: 20px; height: 20px; 
-    font-size: 10px; font-weight: bold; color: white; 
-    border-radius: 5px; justify-content: center; align-items: center; 
-}
-
-/* Classes de utilidade para as cores */
-.bg-blue-600 { background-color: #2563eb !important; }
-.bg-purple-600 { background-color: #9333ea !important; }
-.bg-green-600 { background-color: #16a34a !important; }
-.bg-orange-600 { background-color: #ea580c !important; }
-.bg-yellow-500 { background-color: #eab308 !important; }
-
-/* Modais (Login e Senha) */
-#modalSenha, #modalZoom {
-    backdrop-filter: blur(8px);
-    transition: opacity 0.3s ease;
-}
-
-/* Inputs de formulário */
-input:focus, select:focus {
-    border-color: var(--senai-red);
-    box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
-} 
-</style>
-<div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
-        <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
-        <p class="text-gray-500 text-xs text-center mb-6 font-medium">Digite sua nova senha de acesso</p>
-        
-        <form id="updatePasswordForm" class="space-y-4">
-            <input type="password" id="newPassword" required placeholder="Nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
-            <input type="password" id="confirmPassword" required placeholder="Confirme a senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
-            
-            <div class="flex gap-2 pt-2">
-                <button type="button" onclick="fecharModalSenha()" class="flex-1 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-gray-400">Cancelar</button>
-                <button type="submit" class="flex-1 bg-[#E30613] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition">Salvar</button>
+    <section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
+        <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase">Pesquisar</label>
+                <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full p-2 border rounded-lg text-sm outline-red-500">
             </div>
-        </form>
+            <div>
+                <label class="text-[10px] font-bold text-gray-400 uppercase">Filtrar Turma</label>
+                <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2 border rounded-lg text-sm outline-red-500">
+                    <option value="">Todas as Turmas Ativas</option>
+                </select>
+            </div>
+            <div class="md:col-span-2 flex gap-2 overflow-x-auto">
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-purple-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">PCD</span></label>
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-blue-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">REP</span></label>
+                 </div>
+        </div>
+    </section>
+
+    <main id="alunoGrid" class="container mx-auto p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
+
+    <div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+            <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
+            <form id="updatePasswordForm" class="space-y-4 mt-4">
+                <input type="password" id="newPassword" required placeholder="Nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+                <input type="password" id="confirmPassword" required placeholder="Confirme a senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="fecharModalSenha()" class="flex-1 py-3 text-xs font-bold text-gray-400 uppercase">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-bold uppercase shadow-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<script>
-    // 1. CORREÇÃO DAS CREDENCIAIS (Use as que você me passou antes)
-    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 2. FUNÇÕES DO MODAL DE SENHA
-    function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
-    function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
+        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
 
-    document.getElementById('updatePasswordForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const cpf = localStorage.getItem('usuario_cpf');
-        const nova = document.getElementById('newPassword').value;
-        const confirma = document.getElementById('confirmPassword').value;
+        async function carregarTurmas() {
+            const { data, error } = await _supabase.from('alunos').select('turma');
+            if (error) return;
+            const turmas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
+            const select = document.getElementById('selectTurma');
+            turmas.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                select.appendChild(opt);
+            });
+        }
 
-        if (nova !== confirma) { alert("As senhas não coincidem!"); return; }
-        if (!cpf) { alert("Erro: Usuário não identificado. Faça login novamente."); window.location.href='index.html'; return; }
+        async function filtrarAlunos() {
+            const busca = document.getElementById('inputBusca').value.toLowerCase();
+            const turma = document.getElementById('selectTurma').value;
+            let query = _supabase.from('alunos').select('*');
+            if (turma) query = query.eq('turma', turma);
+            
+            const { data: alunos, error } = await query.order('nome_completo');
+            if (error) return;
 
-        const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('cpf', cpf);
-        if (error) { alert("Erro: " + error.message); } 
-        else { alert("✅ Senha alterada!"); fecharModalSenha(); }
-    };
+            const grid = document.getElementById('alunoGrid');
+            grid.innerHTML = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca)).map(aluno => `
+                <div class="aluno-card">
+                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" class="foto-redonda ${aluno.status === 'Evadido' ? 'grayscale opacity-50' : ''}">
+                    <h3 class="text-[10px] font-black mt-3 text-center uppercase">${aluno.nome_completo}</h3>
+                    <p class="text-[8px] font-bold text-gray-400">${aluno.turma}</p>
+                    ${aluno.status === 'Evadido' ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
+                </div>
+            `).join('');
+        }
 
-    // 3. CORREÇÃO DA CARGA DE DADOS (Removi o filtro 'arquivado' se ele não existir no seu banco)
-    async function carregarTurmas() {
-        const { data, error } = await _supabase.from('alunos').select('turma');
-        if (error) { console.error(error); return; }
-        const turmasUnicas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
-        const select = document.getElementById('selectTurma');
-        select.innerHTML = '<option value="">Todas as Turmas Ativas</option>';
-        turmasUnicas.forEach(t => {
-            const option = document.createElement('option');
-            option.value = t; option.textContent = t;
-            select.appendChild(option);
-        });
-    }
-
-    async function filtrarAlunos() {
-        const busca = document.getElementById('inputBusca').value.toLowerCase();
-        const turma = document.getElementById('selectTurma').value;
-        
-        let query = _supabase.from('alunos').select('*');
-
-        // Filtros Ativos
-        if (turma) query = query.eq('turma', turma);
-        if (document.getElementById('fPCD').checked) query = query.not('pcd_tipo', 'is', null);
-        if (document.getElementById('fREP').checked) query = query.eq('representante', true);
-        if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
-        if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
-        if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
-
-        const { data: alunos, error } = await query.order('nome_completo');
-        if (error) { console.error(error); return; }
-
-        const filtrados = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca));
-        renderizarCards(filtrados);
-    }
-    // ... manter o restante das funções renderizarCards, abrirZoom, etc ...
-</script>
-
+        window.onload = () => { carregarTurmas(); filtrarAlunos(); };
+    </script>
+</body>
+</html>
