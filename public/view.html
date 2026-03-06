@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         :root {
@@ -157,6 +158,41 @@
         }
 
         window.onload = () => { carregarTurmas(); filtrarAlunos(); };
+        async function gerarPDF() {
+    const elemento = document.getElementById('alunoGrid');
+    const turmaSelecionada = document.getElementById('selectTurma').value || "Geral";
+    
+    // Mostra um aviso de carregamento (opcional)
+    const btn = event.currentTarget;
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> GERANDO...';
+
+    const opcoes = {
+        margin: [10, 5, 10, 5], // margens: cima, esquerda, baixo, direita
+        filename: `Carometro_SENAI_${turmaSelecionada}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, // ESSENCIAL para carregar fotos do Supabase no PDF
+            letterRendering: true
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait' 
+        }
+    };
+
+    try {
+        await html2pdf().set(opcoes).from(elemento).save();
+    } catch (erro) {
+        console.error("Erro ao gerar PDF:", erro);
+        alert("Erro ao gerar o arquivo. Verifique se as fotos carregaram corretamente.");
+    } finally {
+        btn.innerHTML = textoOriginal;
+    }
+}
     </script>
 </body>
 </html>
+
