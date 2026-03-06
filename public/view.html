@@ -99,28 +99,28 @@
         color: white;
     }
 
-    .status-overlay {
+.status-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.4); /* Fundo semi-transparente */
-    backdrop-filter: blur(1px);          /* Leve desfoque */
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(1px);
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 20px;
     z-index: 5;
-    pointer-events: none;                /* Permite clicar no card mesmo com o overlay */
 }
 
 .status-tag {
     background: #000;
     color: #fff;
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 900;
-    padding: 4px 8px;
+    padding: 5px 10px;
     border-radius: 4px;
     transform: rotate(-10deg);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    letter-spacing: 1px;
 }
 
     /* Botão de Edição */
@@ -307,52 +307,38 @@
 function renderizarCards(alunos) {
     const grid = document.getElementById('alunoGrid');
     
-    // Se não houver alunos, mostra uma mensagem amigável
-    if (!alunos || alunos.length === 0) {
-        grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10 font-medium">Nenhum aluno encontrado com estes filtros.</p>';
-        return;
-    }
-
     grid.innerHTML = alunos.map(aluno => {
-        // Verifica se o aluno é evadido para aplicar estilos especiais
         const isEvadido = aluno.status === 'Evadido';
         
         return `
-            <div class="aluno-card group ${isEvadido ? 'grayscale-[0.5]' : ''}" 
+            <div class="aluno-card ${isEvadido ? 'is-evadido' : ''}" 
                  onclick="abrirZoom(${JSON.stringify(aluno).replace(/"/g, '&quot;')})">
                 
-                <div class="foto-container relative">
+                <div class="foto-container">
                     <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
-                         class="foto-redonda ${isEvadido ? 'opacity-60' : ''}">
-                    
-                    ${isEvadido ? `
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="bg-black text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg">EVADIDO</span>
-                        </div>
-                    ` : ''}
+                         class="foto-redonda ${isEvadido ? 'grayscale opacity-50' : ''}">
                 </div>
 
                 <h3 class="aluno-nome ${isEvadido ? 'text-gray-400' : ''}">${aluno.nome_completo}</h3>
                 <p class="aluno-turma">${aluno.turma}</p>
                 
-                <div class="badge-group ${isEvadido ? 'opacity-30' : ''}">
+                <div class="badge-group">
                     ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
                     ${aluno.pcd_tipo ? `<div class="badge-icon bg-purple-600">P</div>` : ''}
                     ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
                     ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
                     ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
                 </div>
-  ${isEvadido ? `
+
+                ${isEvadido ? `
                     <div class="status-overlay">
                         <span class="status-tag">EVADIDO</span>
                     </div>
                 ` : ''}
             </div>
-           
         `;
     }).join('');
 }
-
 // Funções para controlar o Zoom
 // Funções para controlar o Zoom (Card Ampliado)
 function abrirZoom(aluno) {
@@ -497,5 +483,6 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
 
