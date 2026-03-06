@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --senai-red: #E30613; }
-        .bg-senai { background-color: var(--senai-red); }
         body { font-family: 'Inter', sans-serif; }
     </style>
     <link rel="icon" type="image/png" href="favicon.png">
@@ -16,7 +15,6 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
 
     <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
-        
         <div class="bg-[#E30613] p-8 text-center">
             <h1 class="text-white text-4xl font-black tracking-tighter">SENAI</h1>
             <p class="text-white/80 text-[10px] uppercase tracking-[0.2em] mt-2 font-bold">Sistema de Carômetro</p>
@@ -45,7 +43,31 @@
                 </button>
             </form>
 
-           
+            <div class="mt-6 text-center">
+                <button onclick="abrirModalSenha()" class="text-[10px] font-bold text-gray-400 hover:text-red-600 uppercase tracking-widest transition">
+                    Esqueceu ou quer alterar a senha?
+                </button>
+            </div>
+            <div id="msgErro" class="hidden mt-4 p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-100 text-center font-bold"></div>
+        </div>
+    </div>
+
+    <div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+            <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
+            <p class="text-gray-500 text-xs text-center mb-6 font-medium">Informe o CPF e a nova senha</p>
+            
+            <form id="updatePasswordForm" class="space-y-4">
+                <input type="text" id="changeCpf" required oninput="mascaraCPF(this)" placeholder="Confirme seu CPF" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+                <input type="password" id="newPassword" required placeholder="Nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+                <input type="password" id="confirmPassword" required placeholder="Confirme a nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+                
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="fecharModalSenha()" class="flex-1 py-3 text-xs font-bold text-gray-400 uppercase">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-black text-white py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-800">Salvar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -54,31 +76,31 @@
         const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Máscara de CPF
         function mascaraCPF(i) {
-            let v = i.value;
-            v = v.replace(/\D/g, "");
+            let v = i.value.replace(/\D/g, "");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
             i.value = v;
         }
 
-        // Login
+        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
+        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+
+        // LOGIN
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
-            const cpfFornecido = document.getElementById('cpfInput').value.replace(/\D/g, ""); // Remove pontos/traço
-            const senhaFornecida = document.getElementById('password').value;
+            const cpf = document.getElementById('cpfInput').value.replace(/\D/g, "");
+            const senha = document.getElementById('password').value;
             const btn = document.getElementById('btnLogin');
 
             btn.disabled = true;
-            btn.innerText = "CARREGANDO...";
+            btn.innerText = "VERIFICANDO...";
 
-            // Busca na sua tabela 'usuarios'
             const { data: usuario, error } = await _supabase
                 .from('usuarios')
                 .select('*')
-                .eq('cpf', cpfFornecido) // Certifique-se que a coluna no banco se chama 'cpf'
+                .eq('cpf', cpf)
                 .single();
 
             if (error || !usuario) {
@@ -88,14 +110,9 @@
                 return;
             }
 
-            if (usuario.senha === senhaFornecida) {
+            if (usuario.senha === senha) {
                 localStorage.setItem('usuario_cpf', usuario.cpf);
                 localStorage.setItem('usuario_nome', usuario.nome);
-
-                if (senhaFornecida === "Senai1234") {
-                    alert("⚠️ Segurança: Troque sua senha padrão agora!");
-                }
-
                 window.location.href = "dashboard.html";
             } else {
                 alert("❌ Senha incorreta!");
@@ -104,53 +121,33 @@
             }
         };
 
-        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
-        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+        // ALTERAÇÃO DE SENHA
+        document.getElementById('updatePasswordForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const cpfParaMudar = document.getElementById('changeCpf').value.replace(/\D/g, "");
+            const nova = document.getElementById('newPassword').value;
+            const confirma = document.getElementById('confirmPassword').value;
 
-     document.getElementById('updatePasswordForm').onsubmit = async (e) => {
-    e.preventDefault();
-    
-    // 1. Pega o CPF que foi salvo na hora do login
-    const cpfLogado = localStorage.getItem('usuario_cpf');
-    const nova = document.getElementById('newPassword').value;
-    const confirma = document.getElementById('confirmPassword').value;
+            if (nova !== confirma) {
+                alert("As senhas não coincidem!");
+                return;
+            }
 
-    console.log("Tentando alterar senha para o CPF:", cpfLogado); // Para debug
+            const { data, error } = await _supabase
+                .from('usuarios')
+                .update({ senha: nova })
+                .eq('cpf', cpfParaMudar)
+                .select();
 
-    if (!cpfLogado) {
-        alert("Erro: CPF não encontrado no navegador. Faça login novamente.");
-        window.location.href = 'index.html';
-        return;
-    }
-
-    if (nova !== confirma) {
-        alert("As senhas não coincidem!");
-        return;
-    }
-
-    // 2. Tenta atualizar na tabela 'usuarios'
-    // IMPORTANTE: Verifique se o nome da coluna no seu banco é 'senha' e 'cpf'
-    const { data, error } = await _supabase
-        .from('usuarios')
-        .update({ senha: nova }) 
-        .eq('cpf', cpfLogado)
-        .select();
-
-    if (error) {
-        console.error("Erro detalhado do Supabase:", error);
-        alert("Erro ao salvar no banco: " + error.message);
-    } else {
-        console.log("Resultado da atualização:", data);
-        if (data.length === 0) {
-            alert("Erro: O CPF logado não foi encontrado na tabela usuários.");
-        } else {
-            alert("✅ Senha alterada com sucesso!");
-            fecharModalSenha();
-        }
-    }
-};
+            if (error) {
+                alert("Erro ao alterar: " + error.message);
+            } else if (data.length === 0) {
+                alert("CPF não encontrado no sistema!");
+            } else {
+                alert("✅ Senha alterada com sucesso! Agora faça o login.");
+                fecharModalSenha();
+            }
+        };
     </script>
 </body>
 </html>
-
-
