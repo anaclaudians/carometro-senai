@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Carômetro SENAI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --senai-red: #E30613; }
         .bg-senai { background-color: var(--senai-red); }
-        .text-senai { color: var(--senai-red); }
+        body { font-family: 'Inter', sans-serif; }
     </style>
     <link rel="icon" type="image/png" href="favicon.png">
 </head>
@@ -24,10 +25,11 @@
         <div class="p-8">
             <form id="loginForm" class="space-y-5">
                 <div>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">E-mail</label>
-                    <input type="email" id="email" required 
+                    <label class="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">CPF do Usuário</label>
+                    <input type="text" id="cpfInput" required maxlength="14"
+                        oninput="mascaraCPF(this)"
                         class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                        placeholder="usuario@senai.br">
+                        placeholder="000.000.000-00">
                 </div>
 
                 <div>
@@ -37,7 +39,7 @@
                         placeholder="••••••••">
                 </div>
 
-                <button type="submit" 
+                <button type="submit" id="btnLogin"
                     class="w-full bg-[#E30613] hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-95">
                     ENTRAR NO SISTEMA
                 </button>
@@ -46,7 +48,7 @@
             <div class="mt-8 pt-6 border-t border-gray-100 text-center">
                 <button onclick="abrirModalSenha()" class="inline-flex items-center gap-2 text-gray-400 hover:text-red-600 transition-colors group">
                     <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-red-50">
-                        <i class="fa fa-user-gear"></i>
+                        <i class="fa-solid fa-user-gear"></i>
                     </div>
                     <span class="text-[10px] font-bold uppercase tracking-wider">Alterar senha padrão</span>
                 </button>
@@ -73,86 +75,94 @@
         </div>
     </div>
 
-</body>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-     const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-document.getElementById('loginForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const nifFornecido = document.getElementById('nif').value;
-    const senhaFornecida = document.getElementById('password').value;
-
-    // Busca o funcionário na tabela 'usuarios' que criamos no SQL
-    const { data: usuario, error } = await _supabase
-        .from('usuarios')
-        .select('*')
-        .eq('', Fornecido)
-        .single();
-
-    if (error || !usuario) {
-        alert("❌ Funcionário não encontrado (CPF incorreto).");
-        return;
-    }
-
-    // Verifica a senha (em um sistema real usaríamos hash, aqui é comparação direta)
-    if (usuario.senha === senhaFornecida) {
-        
-        // Alerta de senha padrão (Senai1234)
-        if (senhaFornecida === "Senai1234") {
-            alert("⚠️ SEGURANÇA: Você está usando a senha padrão. \nTroque sua senha no primeiro acesso!");
+        // Máscara de CPF
+        function mascaraCPF(i) {
+            let v = i.value;
+            v = v.replace(/\D/g, "");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d)/, "$1.$2");
+            v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            i.value = v;
         }
 
-        // Salva uma pequena sessão no navegador para saber quem logou
-        localStorage.setItem('usuario_nif', usuario.nif);
+        // Login
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const cpfFornecido = document.getElementById('cpfInput').value.replace(/\D/g, ""); // Remove pontos/traço
+            const senhaFornecida = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
 
-        // REDIRECIONAMENTO: Vai para a página principal
-        window.location.href = "dashboard.html";
-        
-    } else {
-        alert("❌ Senha incorreta!");
-    }
-};
-        // Funções de Interface
-function abrirModalSenha() {
-    document.getElementById('modalSenha').classList.remove('hidden');
-}
+            btn.disabled = true;
+            btn.innerText = "CARREGANDO...";
 
-function fecharModalSenha() {
-    document.getElementById('modalSenha').classList.add('hidden');
-}
+            // Busca na sua tabela 'usuarios'
+            const { data: usuario, error } = await _supabase
+                .from('usuarios')
+                .select('*')
+                .eq('cpf', cpfFornecido) // Certifique-se que a coluna no banco se chama 'cpf'
+                .single();
 
-// Lógica de Atualização no Supabase
-document.getElementById('updatePasswordForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
+            if (error || !usuario) {
+                alert("❌ Usuário não encontrado.");
+                btn.disabled = false;
+                btn.innerText = "ENTRAR NO SISTEMA";
+                return;
+            }
 
-    if (newPassword !== confirmPassword) {
-        alert("As senhas não coincidem!");
-        return;
-    }
+            if (usuario.senha === senhaFornecida) {
+                localStorage.setItem('usuario_cpf', usuario.cpf);
+                localStorage.setItem('usuario_nome', usuario.nome);
 
-    // Tenta atualizar a senha do usuário logado
-    const { data, error } = await _supabase.auth.updateUser({
-        password: newPassword
-    });
+                if (senhaFornecida === "Senai1234") {
+                    alert("⚠️ Segurança: Troque sua senha padrão agora!");
+                }
 
-    if (error) {
-        alert("Erro: " + error.message + "\n(Você precisa estar logado para mudar a senha)");
-    } else {
-        alert("Senha alterada com sucesso!");
-        fecharModalSenha();
-    }
-});
+                window.location.href = "dashboard.html";
+            } else {
+                alert("❌ Senha incorreta!");
+                btn.disabled = false;
+                btn.innerText = "ENTRAR NO SISTEMA";
+            }
+        };
+
+        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
+        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+
+        // Troca de Senha Manual na Tabela 'usuarios'
+        document.getElementById('updatePasswordForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const cpfLogado = localStorage.getItem('usuario_cpf');
+            const nova = document.getElementById('newPassword').value;
+            const confirma = document.getElementById('confirmPassword').value;
+
+            if (!cpfLogado) {
+                alert("Erro: Você precisa logar primeiro para mudar a senha.");
+                return;
+            }
+
+            if (nova !== confirma) {
+                alert("As senhas não coincidem!");
+                return;
+            }
+
+            const { error } = await _supabase
+                .from('usuarios')
+                .update({ senha: nova })
+                .eq('cpf', cpfLogado);
+
+            if (error) {
+                alert("Erro ao atualizar: " + error.message);
+            } else {
+                alert("✅ Senha alterada com sucesso!");
+                fecharModalSenha();
+            }
+        };
     </script>
-
-
+</body>
 </html>
-
-
-
-
