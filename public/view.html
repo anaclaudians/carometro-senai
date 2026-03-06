@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
        /* Variáveis de Cores SENAI */
     :root {
@@ -178,6 +179,9 @@
     from { opacity: 0; transform: scale(0.8); }
     to { opacity: 1; transform: scale(1); }
 }
+.aluno-card {
+    page-break-inside: avoid; /* Evita que o card seja cortado entre duas páginas */
+}
     </style>
 </head>
 <body class="bg-gray-100 pb-10">
@@ -188,6 +192,9 @@
         <h1 class="text-sm font-light border-l pl-4 border-white/30">Consulta de Alunos</h1>
     </div>
     <div class="text-[10px] font-bold opacity-70 uppercase">Modo Visualização</div>
+    <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
+    <i class="fa fa-file-pdf"></i> GERAR PDF
+</button>
 </header>
 
 <section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
@@ -362,6 +369,40 @@ window.onload = async () => {
     await carregarTurmas(); // Carrega o select primeiro
     filtrarAlunos();        // Depois carrega os cards
 };
+async function gerarPDF() {
+    const elemento = document.getElementById('alunoGrid');
+    const botao = event.currentTarget;
+    
+    // Feedback visual de carregamento
+    botao.innerText = "GERANDO...";
+    botao.disabled = true;
+
+    const turmaSelecionada = document.getElementById('selectTurma').value || "GERAL";
+    const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+
+    const configuracao = {
+        margin: [10, 10, 10, 10], // margens [topo, esquerda, baixo, direita]
+        filename: `Carometro_SENAI_${turmaSelecionada}_${dataAtual}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, // Aumenta a resolução do PDF
+            useCORS: true, // Essencial para carregar as fotos do Supabase
+            letterRendering: true 
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        // Gera o PDF
+        await html2pdf().set(configuracao).from(elemento).save();
+    } catch (error) {
+        console.error("Erro ao gerar PDF:", error);
+        alert("Erro ao carregar fotos para o PDF. Verifique a conexão.");
+    } finally {
+        botao.innerHTML = '<i class="fa fa-file-pdf"></i> GERAR PDF';
+        botao.disabled = false;
+    }
+}
 </script>
 <div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
     <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all scale-95" onclick="event.stopPropagation()">
