@@ -115,6 +115,19 @@
                 <i class="fa fa-file-pdf"></i> GERAR PDF
             </button>
         </div>
+        <div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
+    <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all" onclick="event.stopPropagation()">
+        <div class="relative">
+            <img id="zoomFoto" src="" class="w-full h-80 object-cover">
+            <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold">&times;</button>
+        </div>
+        <div class="p-8 text-center">
+            <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase mb-2"></h2>
+            <p id="zoomTurma" class="text-sm font-bold text-red-600 uppercase mb-6"></p>
+            <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
+        </div>
+    </div>
+</div>
     </header>
 
     <section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
@@ -171,7 +184,76 @@
                 select.appendChild(opt);
             });
         }
+// FUNÇÃO PARA RENDERIZAR OS CARDS (Com clique para Zoom)
+function renderizarCards(alunos) {
+    const grid = document.getElementById('alunoGrid');
+    grid.innerHTML = alunos.map(aluno => {
+        const isEvadido = aluno.status === 'Evadido';
+        // Transformamos o objeto aluno em string para passar no clique
+        const alunoString = JSON.stringify(aluno).replace(/'/g, "&apos;");
+        
+        return `
+            <div class="aluno-card" onclick='abrirZoom(${alunoString})'>
+                <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
+                     class="foto-redonda ${isEvadido ? 'grayscale opacity-50' : ''}">
+                <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight">${aluno.nome_completo}</h3>
+                <p class="text-[9px] font-bold text-gray-400">${aluno.turma}</p>
+                <div class="badge-group mt-2">
+                    ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
+                    ${aluno.pcd_tipo ? '<div class="badge-icon bg-purple-600">P</div>' : ''}
+                    ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
+                    ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
+                    ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
+                </div>
+                ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
+            </div>`;
+    }).join('');
+}
 
+// FUNÇÕES DE ZOOM
+function abrirZoom(aluno) {
+    document.getElementById('zoomFoto').src = aluno.foto_url || 'https://via.placeholder.com/150';
+    document.getElementById('zoomNome').innerText = aluno.nome_completo;
+    document.getElementById('zoomTurma').innerText = aluno.turma;
+    
+    let bHtml = '';
+    if(aluno.status === 'Evadido') bHtml += '<span class="bg-black text-white px-3 py-1 rounded text-[10px] font-bold">EVADIDO</span>';
+    if(aluno.representante) bHtml += '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-bold">REPRESENTANTE</span>';
+    if(aluno.pcd_tipo) bHtml += `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded text-[10px] font-bold">PCD: ${aluno.pcd_tipo}</span>`;
+    if(aluno.aapm) bHtml += '<span class="bg-green-100 text-green-700 px-3 py-1 rounded text-[10px] font-bold">AAPM</span>';
+    if(aluno.npaadc) bHtml += '<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded text-[10px] font-bold">NPAADC</span>';
+    if(aluno.spskills) bHtml += '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-[10px] font-bold">SP SKILLS</span>';
+    
+    document.getElementById('zoomBadges').innerHTML = bHtml;
+    document.getElementById('modalZoom').classList.remove('hidden');
+}
+
+function fecharZoom() { 
+    document.getElementById('modalZoom').classList.add('hidden'); 
+}
+
+// FILTRAR ALUNOS (Corrigido com todos os campos)
+async function filtrarAlunos() {
+    const busca = document.getElementById('inputBusca').value.toLowerCase();
+    const turma = document.getElementById('selectTurma').value;
+    
+    let query = _supabase.from('alunos').select('*');
+
+    if (turma) query = query.eq('turma', turma);
+    
+    // Filtros de Checkbox
+    if (document.getElementById('fPCD')?.checked) query = query.not('pcd_tipo', 'is', null);
+    if (document.getElementById('fREP')?.checked) query = query.eq('representante', true);
+    if (document.getElementById('fAAPM')?.checked) query = query.eq('aapm', true);
+    if (document.getElementById('fNPAADC')?.checked) query = query.eq('npaadc', true);
+    if (document.getElementById('fSKILLS')?.checked) query = query.eq('spskills', true);
+
+    const { data: alunos, error } = await query.order('nome_completo');
+    if (error) { console.error(error); return; }
+
+    const filtrados = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca));
+    renderizarCards(filtrados);
+}
         async function filtrarAlunos() {
             const busca = document.getElementById('inputBusca').value.toLowerCase();
             const turma = document.getElementById('selectTurma').value;
@@ -283,5 +365,6 @@
     </script>
 </body>
 </html>
+
 
 
