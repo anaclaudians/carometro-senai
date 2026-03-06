@@ -20,7 +20,7 @@
 
         <form id="loginForm" class="space-y-4">
             <div>
-                <label class="block text-sm font-bold text-gray-700">NIF DO FUNCIONÁRIO</label>
+                <label class="block text-sm font-bold text-gray-700">CPF DO FUNCIONÁRIO</label>
                 <input type="text" id="nif" required class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500" placeholder="00000000">
             </div>
             <div>
@@ -45,11 +45,11 @@ document.getElementById('loginForm').onsubmit = async (e) => {
     const { data: usuario, error } = await _supabase
         .from('usuarios')
         .select('*')
-        .eq('nif', nifFornecido)
+        .eq('', Fornecido)
         .single();
 
     if (error || !usuario) {
-        alert("❌ Funcionário não encontrado (NIF incorreto).");
+        alert("❌ Funcionário não encontrado (CPF incorreto).");
         return;
     }
 
@@ -75,3 +75,4 @@ document.getElementById('loginForm').onsubmit = async (e) => {
 </body>
 
 </html>
+
