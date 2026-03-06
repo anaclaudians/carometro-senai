@@ -281,9 +281,9 @@
 <main id="alunoGrid" class="container mx-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
 
 <script>
-    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = 'https://SUA_URL_AQUI.supabase.co'; 
+const SUPABASE_KEY = 'SUA_KEY_AQUI';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
    async function carregarTurmas() {
     console.log("Buscando turmas..."); // Verificação no console (F12)
@@ -316,23 +316,20 @@
     console.log("Turmas carregadas:", turmasUnicas);
 }
 
-    async function filtrarAlunos() {
-        const busca = document.getElementById('inputBusca').value;
-        const turma = document.getElementById('selectTurma').value;
-        let query = _supabase.from('alunos').select('*').eq('arquivado', false);
+  async function filtrarAlunos() {
+    let query = _supabase.from('alunos').select('*').eq('arquivado', false);
 
-        if (turma) query = query.eq('turma', turma);
-        if (busca) query = query.ilike('nome_completo', `%${busca}%`);
-        if (document.getElementById('fPCD').checked) query = query.not('pcd_tipo', 'is', null).neq('pcd_tipo', '');
-        if (document.getElementById('fREP').checked) query = query.eq('representante', true);
-        if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
-        if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
-        if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
+    // ... (seus filtros de busca e checkboxes aqui)
 
-        const { data: alunos } = await query.order('nome_completo');
-        renderizarCards(alunos || []);
+    const { data: alunos, error } = await query.order('nome_completo');
+    
+    if (error) {
+        console.error("Erro ao buscar alunos:", error);
+        return;
     }
 
+    renderizarCards(alunos || []); // Certifique-se que esta linha existe
+}
     // Atualizada para incluir o clique (onclick)
 function renderizarCards(alunos) {
     const grid = document.getElementById('alunoGrid');
@@ -580,6 +577,7 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
 
 
