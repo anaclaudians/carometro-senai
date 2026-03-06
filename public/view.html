@@ -14,7 +14,113 @@
         </button>
     </div>
 </header>
+<style>:root {
+    --senai-red: #E30613;
+    --senai-dark: #1a1a1a;
+    --senai-gray: #f4f4f4;
+}
 
+/* Reset e Body */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb;
+}
+
+/* Header Estilizado */
+header {
+    background-color: var(--senai-red);
+    box-shadow: 0 4px 15px rgba(227, 6, 19, 0.2);
+}
+
+/* Grid e Cards de Alunos */
+#alunoGrid {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.aluno-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.aluno-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-color: var(--senai-red);
+}
+
+/* Estilo das Fotos */
+.foto-redonda {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px var(--senai-red);
+    background-color: #f1f5f9;
+}
+
+/* Selo de Evadido */
+.status-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    z-index: 5;
+}
+
+.status-tag {
+    background: #000;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transform: rotate(-12deg);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* Badges de Cores (Tags) */
+.badge-group { display: flex; gap: 4px; justify-content: center; margin-top: 10px; }
+.badge-icon { 
+    display: inline-flex; width: 20px; height: 20px; 
+    font-size: 10px; font-weight: bold; color: white; 
+    border-radius: 5px; justify-content: center; align-items: center; 
+}
+
+/* Classes de utilidade para as cores */
+.bg-blue-600 { background-color: #2563eb !important; }
+.bg-purple-600 { background-color: #9333ea !important; }
+.bg-green-600 { background-color: #16a34a !important; }
+.bg-orange-600 { background-color: #ea580c !important; }
+.bg-yellow-500 { background-color: #eab308 !important; }
+
+/* Modais (Login e Senha) */
+#modalSenha, #modalZoom {
+    backdrop-filter: blur(8px);
+    transition: opacity 0.3s ease;
+}
+
+/* Inputs de formulário */
+input:focus, select:focus {
+    border-color: var(--senai-red);
+    box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
+} 
+</style>
 <div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
         <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
@@ -92,3 +198,4 @@
     }
     // ... manter o restante das funções renderizarCards, abrirZoom, etc ...
 </script>
+
