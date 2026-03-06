@@ -342,7 +342,12 @@ function renderizarCards(alunos) {
                     ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
                     ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
                 </div>
-
+  ${isEvadido ? `
+                    <div class="status-overlay">
+                        <span class="status-tag">EVADIDO</span>
+                    </div>
+                ` : ''}
+            </div>
            
         `;
     }).join('');
@@ -492,4 +497,5 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
