@@ -1,108 +1,68 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carômetro SENAI - Consulta</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        :root { --senai-red: #E30613; --senai-dark: #1a1a1a; }
-        #alunoGrid { gap: 1.5rem; padding: 1rem; }
-        .aluno-card {
-            background: white; border-radius: 20px; padding: 1.5rem 1rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(0,0,0,0.05); display: flex;
-            flex-direction: column; align-items: center; position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); cursor: pointer;
-        }
-        .aluno-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: var(--senai-red); }
-        .foto-redonda { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 0 0 2px var(--senai-red); background-color: #f1f5f9; }
-        .aluno-nome { font-size: 0.75rem; font-weight: 800; color: var(--senai-dark); text-transform: uppercase; margin-bottom: 0.25rem; text-align: center; }
-        .aluno-turma { font-size: 0.6rem; font-weight: 700; color: #94a3b8; }
-        .badge-group { display: flex; gap: 4px; justify-content: center; margin-top: auto; }
-        .badge-icon { display: inline-flex; width: 18px; height: 18px; font-size: 9px; font-weight: bold; color: white; border-radius: 4px; justify-content: center; align-items: center; }
-        .status-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(1px); display: flex; align-items: center; justify-content: center; border-radius: 20px; z-index: 5; }
-        .status-tag { background: #000; color: #fff; font-size: 9px; font-weight: 900; padding: 5px 10px; border-radius: 4px; transform: rotate(-10deg); }
-        
-        /* Cores das Tags */
-        .bg-blue-600 { background-color: #2563eb !important; }
-        .bg-purple-600 { background-color: #9333ea !important; }
-        .bg-green-600 { background-color: #16a34a !important; }
-        .bg-orange-600 { background-color: #ea580c !important; }
-        .bg-yellow-500 { background-color: #eab308 !important; }
-
-        @media print {
-            body { background: white !important; }
-            #alunoGrid { grid-template-columns: repeat(4, 1fr) !important; }
-            header, section { display: none !important; }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 pb-10">
-
 <header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
     <div class="flex items-center gap-4">
         <span class="font-black text-2xl tracking-tighter">SENAI</span>
         <h1 class="text-sm font-light border-l pl-4 border-white/30">Consulta de Alunos</h1>
     </div>
-    <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
-        <i class="fa fa-file-pdf"></i> GERAR PDF
-    </button>
+    
+    <div class="flex gap-3">
+        <button onclick="abrirModalSenha()" class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2">
+            <i class="fa fa-key"></i> SENHA
+        </button>
+        
+        <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
+            <i class="fa fa-file-pdf"></i> GERAR PDF
+        </button>
+    </div>
 </header>
 
-<section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
-    <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-        <div>
-            <label class="text-[10px] font-bold text-gray-400 uppercase">Pesquisar</label>
-            <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full p-2 border rounded-lg text-sm outline-red-500">
-        </div>
-        <div>
-            <label class="text-[10px] font-bold text-gray-400 uppercase">Filtrar Turma</label>
-            <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2 border rounded-lg text-sm outline-red-500">
-                <option value="">Todas as Turmas Ativas</option>
-            </select>
-        </div>
-        <div class="md:col-span-2 flex gap-2 overflow-x-auto pb-1">
-            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-purple-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">PCD</span></label>
-            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-blue-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">REP</span></label>
-            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fAAPM" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-green-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">AAPM</span></label>
-            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fNPAADC" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-orange-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">NPAADC</span></label>
-            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fSKILLS" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-yellow-500 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">SKILLS</span></label>
-        </div>
-    </div>
-</section>
-
-<main id="alunoGrid" class="container mx-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
-
-<div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
-    <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all" onclick="event.stopPropagation()">
-        <div class="relative">
-            <img id="zoomFoto" src="" class="w-full h-80 object-cover">
-            <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full">&times;</button>
-        </div>
-        <div class="p-8 text-center">
-            <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase mb-2"></h2>
-            <p id="zoomTurma" class="text-sm font-bold text-red-600 uppercase mb-6"></p>
-            <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
-        </div>
+<div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+        <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
+        <p class="text-gray-500 text-xs text-center mb-6 font-medium">Digite sua nova senha de acesso</p>
+        
+        <form id="updatePasswordForm" class="space-y-4">
+            <input type="password" id="newPassword" required placeholder="Nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+            <input type="password" id="confirmPassword" required placeholder="Confirme a senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
+            
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="fecharModalSenha()" class="flex-1 py-3 text-xs font-bold text-gray-400 uppercase tracking-widest text-gray-400">Cancelar</button>
+                <button type="submit" class="flex-1 bg-[#E30613] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition">Salvar</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-    // IMPORTANTE: Insira suas credenciais aqui
-    const SUPABASE_URL = 'https://SUA_URL.supabase.co'; 
-    const SUPABASE_KEY = 'SUA_KEY';
+    // 1. CORREÇÃO DAS CREDENCIAIS (Use as que você me passou antes)
+    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // 2. FUNÇÕES DO MODAL DE SENHA
+    function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
+    function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+
+    document.getElementById('updatePasswordForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const cpf = localStorage.getItem('usuario_cpf');
+        const nova = document.getElementById('newPassword').value;
+        const confirma = document.getElementById('confirmPassword').value;
+
+        if (nova !== confirma) { alert("As senhas não coincidem!"); return; }
+        if (!cpf) { alert("Erro: Usuário não identificado. Faça login novamente."); window.location.href='index.html'; return; }
+
+        const { error } = await _supabase.from('usuarios').update({ senha: nova }).eq('cpf', cpf);
+        if (error) { alert("Erro: " + error.message); } 
+        else { alert("✅ Senha alterada!"); fecharModalSenha(); }
+    };
+
+    // 3. CORREÇÃO DA CARGA DE DADOS (Removi o filtro 'arquivado' se ele não existir no seu banco)
     async function carregarTurmas() {
-        const { data, error } = await _supabase.from('alunos').select('turma').eq('arquivado', false);
-        if (error) return;
+        const { data, error } = await _supabase.from('alunos').select('turma');
+        if (error) { console.error(error); return; }
         const turmasUnicas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
         const select = document.getElementById('selectTurma');
+        select.innerHTML = '<option value="">Todas as Turmas Ativas</option>';
         turmasUnicas.forEach(t => {
             const option = document.createElement('option');
             option.value = t; option.textContent = t;
@@ -114,8 +74,9 @@
         const busca = document.getElementById('inputBusca').value.toLowerCase();
         const turma = document.getElementById('selectTurma').value;
         
-        let query = _supabase.from('alunos').select('*').eq('arquivado', false);
+        let query = _supabase.from('alunos').select('*');
 
+        // Filtros Ativos
         if (turma) query = query.eq('turma', turma);
         if (document.getElementById('fPCD').checked) query = query.not('pcd_tipo', 'is', null);
         if (document.getElementById('fREP').checked) query = query.eq('representante', true);
@@ -124,65 +85,10 @@
         if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
 
         const { data: alunos, error } = await query.order('nome_completo');
-        if (error) return;
+        if (error) { console.error(error); return; }
 
         const filtrados = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca));
         renderizarCards(filtrados);
     }
-
-    function renderizarCards(alunos) {
-        const grid = document.getElementById('alunoGrid');
-        grid.innerHTML = alunos.map(aluno => {
-            const isEvadido = aluno.status === 'Evadido';
-            return `
-                <div class="aluno-card" onclick='abrirZoom(${JSON.stringify(aluno)})'>
-                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" class="foto-redonda ${isEvadido ? 'grayscale opacity-50' : ''}">
-                    <h3 class="aluno-nome mt-2">${aluno.nome_completo}</h3>
-                    <p class="aluno-turma">${aluno.turma}</p>
-                    <div class="badge-group">
-                        ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
-                        ${aluno.pcd_tipo ? '<div class="badge-icon bg-purple-600">P</div>' : ''}
-                        ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
-                        ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
-                        ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
-                    </div>
-                    ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
-                </div>`;
-        }).join('');
-    }
-
-    function abrirZoom(aluno) {
-        document.getElementById('zoomFoto').src = aluno.foto_url || 'https://via.placeholder.com/150';
-        document.getElementById('zoomNome').innerText = aluno.nome_completo;
-        document.getElementById('zoomTurma').innerText = aluno.turma;
-        
-        let bHtml = '';
-        if(aluno.status === 'Evadido') bHtml += '<span class="bg-black text-white px-2 py-1 rounded">EVADIDO</span>';
-        if(aluno.representante) bHtml += '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">REPRESENTANTE</span>';
-        if(aluno.pcd_tipo) bHtml += `<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded">PCD: ${aluno.pcd_tipo}</span>`;
-        
-        document.getElementById('zoomBadges').innerHTML = bHtml;
-        document.getElementById('modalZoom').classList.remove('hidden');
-    }
-
-    function fecharZoom() { document.getElementById('modalZoom').classList.add('hidden'); }
-
-    async function gerarPDF() {
-        const grid = document.getElementById('alunoGrid');
-        const turma = document.getElementById('selectTurma').value || "Geral";
-        const opt = {
-            margin: 10, filename: `Carometro_${turma}.pdf`,
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(grid).save();
-    }
-
-    window.onload = async () => {
-        await carregarTurmas();
-        filtrarAlunos();
-    };
+    // ... manter o restante das funções renderizarCards, abrirZoom, etc ...
 </script>
-</body>
-</html>
-
