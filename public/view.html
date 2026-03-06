@@ -87,17 +87,27 @@
         margin-top: auto;
     }
 
-    .badge-icon {
-        width: 20px;
-        height: 20px;
-        border-radius: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 9px;
-        font-weight: 900;
-        color: white;
-    }
+  /* Estilos para garantir que as tags apareçam no PDF */
+.badge-icon {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+    color: white !important;
+    border-radius: 4px !important;
+}
+
+/* Cores específicas para o motor de PDF */
+.bg-blue-600 { background-color: #2563eb !important; }
+.bg-purple-600 { background-color: #9333ea !important; }
+.bg-green-600 { background-color: #16a34a !important; }
+.bg-orange-600 { background-color: #ea580c !important; }
+.bg-yellow-500 { background-color: #eab308 !important; }
 
 .status-overlay {
     position: absolute;
@@ -407,54 +417,49 @@ async function gerarPDF() {
     const botao = event.currentTarget;
     const turma = document.getElementById('selectTurma').value || "GERAL";
     
-    botao.innerText = "A GERAR DOCUMENTO...";
+    botao.innerText = "AJUSTANDO PÁGINAS...";
     botao.disabled = true;
 
-    // Criar um container temporário formatado para A4
+    // Criar o container de impressão
     const printArea = document.createElement('div');
-    printArea.style.width = "180mm"; // Largura útil do A4
-    printArea.style.margin = "0 auto";
-    printArea.style.fontFamily = "sans-serif";
-
-    // Cabeçalho Profissional
+    printArea.className = "pdf-print-container"; // Usaremos para aplicar CSS específico
+    
+    // Cabeçalho fixo para o PDF
     let htmlHeader = `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #E30613; padding-bottom: 10px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #E30613; padding-bottom: 10px; margin-bottom: 20px; font-family: sans-serif;">
             <div>
-                <h1 style="color: #E30613; font-size: 28px; font-weight: 900; margin: 0; letter-spacing: -1px;">SENAI</h1>
-                <p style="font-size: 10px; color: #444; margin: 0; font-weight: bold; text-transform: uppercase;">Carómetro Oficial de Alunos</p>
+                <h1 style="color: #E30613; font-size: 24px; font-weight: 900; margin: 0;">SENAI</h1>
+                <p style="font-size: 10px; color: #444; margin: 0; font-weight: bold;">CARÔMETRO OFICIAL</p>
             </div>
             <div style="text-align: right;">
-                <p style="font-size: 14px; font-weight: 800; margin: 0; color: #1a1a1a;">TURMA: ${turma}</p>
-                <p style="font-size: 9px; color: #777; margin: 0;">Data: ${new Date().toLocaleString('pt-PT')}</p>
+                <p style="font-size: 14px; font-weight: 800; margin: 0;">TURMA: ${turma}</p>
+                <p style="font-size: 9px; color: #777; margin: 0;">${new Date().toLocaleDateString()}</p>
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; width: 100%;">
     `;
 
-    // Processar cada card para o PDF
     const cards = Array.from(gridOriginal.querySelectorAll('.aluno-card'));
     let htmlContent = cards.map(card => {
         const nome = card.querySelector('.aluno-nome').innerText;
         const foto = card.querySelector('.foto-redonda').src;
         const badges = card.querySelector('.badge-group').innerHTML;
-        const isEvadido = card.classList.contains('is-evadido') || card.innerHTML.includes('EVADIDO');
+        const isEvadido = card.innerHTML.includes('EVADIDO');
 
         return `
-            <div style="border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; position: relative; background: #fff; page-break-inside: avoid; height: 180px; display: flex; flex-direction: column; align-items: center;">
-                <img src="${foto}" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid ${isEvadido ? '#ccc' : '#E30613'}; margin-bottom: 8px; ${isEvadido ? 'filter: grayscale(1); opacity: 0.5;' : ''}">
+            <div style="width: 42mm; height: 60mm; border: 1px solid #ddd; border-radius: 8px; padding: 5px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative; background: white; page-break-inside: avoid; margin-bottom: 5px;">
+                <img src="${foto}" style="width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid ${isEvadido ? '#ccc' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.5;' : ''}">
                 
-                <div style="font-size: 9px; font-weight: 800; color: #1a1a1a; text-transform: uppercase; line-height: 1.1; margin-bottom: 5px; height: 2.2em; overflow: hidden;">
+                <div style="font-size: 9px; font-weight: 800; color: #000; text-transform: uppercase; margin: 5px 0; line-height: 1.1; max-height: 2.2em; overflow: hidden;">
                     ${nome}
                 </div>
 
-                <div style="display: flex; gap: 3px; justify-content: center; margin-top: auto;">
+                <div style="display: flex; gap: 2px; justify-content: center; padding-bottom: 5px;">
                     ${badges}
                 </div>
 
                 ${isEvadido ? `
-                    <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: rgba(0,0,0,0.8); color: white; font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 3px; z-index: 10;">
-                        EVADIDO
-                    </div>
+                    <div style="position: absolute; top: 35px; left: 0; right: 0; background: black; color: white; font-size: 8px; font-weight: 900; padding: 2px 0; transform: rotate(-15deg); z-index: 10;">EVADIDO</div>
                 ` : ''}
             </div>
         `;
@@ -462,23 +467,19 @@ async function gerarPDF() {
 
     printArea.innerHTML = htmlHeader + htmlContent + `</div>`;
 
-    // Configuração do html2pdf
     const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `Carometro_SENAI_${turma}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: { 
-            scale: 3, // Aumentamos a escala para as fotos ficarem nítidas
-            useCORS: true, 
-            letterRendering: true 
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        margin: 10,
+        filename: `Carometro_${turma}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Força o PDF a evitar cortes
     };
 
     try {
         await html2pdf().set(opt).from(printArea).save();
     } catch (e) {
-        console.error("Erro no PDF:", e);
+        console.error(e);
     } finally {
         botao.innerHTML = '<i class="fa fa-file-pdf"></i> GERAR PDF';
         botao.disabled = false;
@@ -530,6 +531,7 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
 
 
