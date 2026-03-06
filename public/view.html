@@ -62,6 +62,41 @@
         .bg-green-600 { background-color: #16a34a !important; }
         .bg-orange-600 { background-color: #ea580c !important; }
         .bg-yellow-500 { background-color: #eab308 !important; }
+        // ... dentro do mapeamento dos cards ...
+    return `
+        <td style="width: 25%; padding: 4px; vertical-align: top;">
+            <div style="border: 1px solid #ccc; border-radius: 6px; padding: 8px 4px; text-align: center; height: 135px; position: relative; background: white; display: flex; flex-direction: column; align-items: center;">
+                
+                <img src="${foto}" style="width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isEvadido ? '#ddd' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.4;' : ''}">
+                
+                <div style="
+                    font-size: 8.5px; 
+                    font-weight: 800; 
+                    margin: 8px 0; 
+                    text-transform: uppercase; 
+                    color: ${isEvadido ? '#999' : '#000'}; 
+                    line-height: 1.2; 
+                    height: 2.4em; 
+                    display: flex; 
+                    align-items: center;    /* Centraliza verticalmente */
+                    justify-content: center; /* Centraliza horizontalmente */
+                    text-align: center; 
+                    width: 100%; 
+                    overflow: hidden;
+                ">
+                    ${nome}
+                </div>
+
+                <div style="display: flex; gap: 2px; justify-content: center; margin-top: auto; padding-bottom: 2px;">
+                    ${badges}
+                </div>
+
+                ${isEvadido ? `
+                    <div style="position: absolute; top: 35px; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 2px 0; transform: rotate(-10deg); text-align: center; z-index: 10;">EVADIDO</div>
+                ` : ''}
+            </div>
+        </td>
+    `;
     </style>
 </head>
 <body class="pb-10">
@@ -158,41 +193,95 @@
         }
 
         window.onload = () => { carregarTurmas(); filtrarAlunos(); };
-        async function gerarPDF() {
-    const elemento = document.getElementById('alunoGrid');
-    const turmaSelecionada = document.getElementById('selectTurma').value || "Geral";
+       async function gerarPDF() {
+    const gridOriginal = document.getElementById('alunoGrid');
+    const botao = event.currentTarget;
+    const turma = document.getElementById('selectTurma').value || "GERAL";
     
-    // Mostra um aviso de carregamento (opcional)
-    const btn = event.currentTarget;
-    const textoOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> GERANDO...';
+    botao.innerText = "TRAVANDO LAYOUT...";
+    botao.disabled = true;
 
-    const opcoes = {
-        margin: [10, 5, 10, 5], // margens: cima, esquerda, baixo, direita
-        filename: `Carometro_SENAI_${turmaSelecionada}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, // ESSENCIAL para carregar fotos do Supabase no PDF
-            letterRendering: true
-        },
-        jsPDF: { 
-            unit: 'mm', 
-            format: 'a4', 
-            orientation: 'portrait' 
+    const printArea = document.createElement('div');
+    // Forçamos a largura do container para caber exatamente no A4 (210mm - margens)
+    printArea.style.width = "190mm"; 
+    printArea.style.fontFamily = "Arial, sans-serif";
+
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E30613; padding-bottom: 5px; margin-bottom: 15px;">
+            <div style="color: #E30613; font-size: 22px; font-weight: bold;">SENAI</div>
+            <div style="text-align: right; font-size: 11px;">
+                <b>TURMA: ${turma}</b><br>
+                <span>${new Date().toLocaleDateString()}</span>
+            </div>
+        </div>
+        <table style="width: 100%; table-layout: fixed; border-spacing: 2mm; border-collapse: separate;">
+    `;
+
+    const cards = Array.from(gridOriginal.querySelectorAll('.aluno-card'));
+    
+    for (let i = 0; i < cards.length; i += 4) {
+        html += `<tr>`;
+        for (let j = 0; j < 4; j++) {
+            const card = cards[i + j];
+            if (card) {
+                const nome = card.querySelector('.aluno-nome').innerText;
+                const foto = card.querySelector('.foto-redonda').src;
+                const badges = card.querySelector('.badge-group').innerHTML;
+                const isEvadido = card.innerHTML.includes('EVADIDO');
+
+                // Cada célula tem exatamente 25% de 190mm e altura fixa
+                html += `
+                    <td style="width: 25%; vertical-align: top;">
+                        <div style="border: 0.5pt solid #bbb; border-radius: 5px; padding: 5px 2px; text-align: center; height: 125px; background: white; position: relative; overflow: hidden;">
+                            
+                            <img src="${foto}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isEvadido ? '#ccc' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.4;' : ''}">
+                            
+                            <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
+                                <span style="font-size: 8px; font-weight: bold; line-height: 1.1; text-transform: uppercase; color: ${isEvadido ? '#888' : '#000'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; padding: 0 2px;">
+                                    ${nome}
+                                </span>
+                            </div>
+
+                            <div style="display: flex; gap: 2px; justify-content: center; height: 18px; align-items: center;">
+                                ${badges}
+                            </div>
+
+                            ${isEvadido ? `
+                                <div style="position: absolute; top: 25px; left: -10px; width: 120%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 1px 0; transform: rotate(-15deg); text-align: center; z-index: 5;">EVADIDO</div>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+            } else {
+                html += `<td style="width: 25%;"></td>`;
+            }
         }
+        html += `</tr>`;
+    }
+
+    html += `</table>`;
+    printArea.innerHTML = html;
+
+    const opt = {
+        margin: [10, 5, 10, 5], // Margens: Topo, Esquerda, Fundo, Direita
+        filename: `Carometro_${turma}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     try {
-        await html2pdf().set(opcoes).from(elemento).save();
-    } catch (erro) {
-        console.error("Erro ao gerar PDF:", erro);
-        alert("Erro ao gerar o arquivo. Verifique se as fotos carregaram corretamente.");
+        await html2pdf().set(opt).from(printArea).save();
+    } catch (e) {
+        console.error(e);
     } finally {
-        btn.innerHTML = textoOriginal;
+        botao.innerHTML = '<i class="fa fa-file-pdf"></i> GERAR PDF';
+        botao.disabled = false;
     }
 }
     </script>
 </body>
 </html>
+
 
