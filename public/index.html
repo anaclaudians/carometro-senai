@@ -107,36 +107,50 @@
         function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
         function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
 
-        // Troca de Senha Manual na Tabela 'usuarios'
-        document.getElementById('updatePasswordForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const cpfLogado = localStorage.getItem('usuario_cpf');
-            const nova = document.getElementById('newPassword').value;
-            const confirma = document.getElementById('confirmPassword').value;
+     document.getElementById('updatePasswordForm').onsubmit = async (e) => {
+    e.preventDefault();
+    
+    // 1. Pega o CPF que foi salvo na hora do login
+    const cpfLogado = localStorage.getItem('usuario_cpf');
+    const nova = document.getElementById('newPassword').value;
+    const confirma = document.getElementById('confirmPassword').value;
 
-            if (!cpfLogado) {
-                alert("Erro: Você precisa logar primeiro para mudar a senha.");
-                return;
-            }
+    console.log("Tentando alterar senha para o CPF:", cpfLogado); // Para debug
 
-            if (nova !== confirma) {
-                alert("As senhas não coincidem!");
-                return;
-            }
+    if (!cpfLogado) {
+        alert("Erro: CPF não encontrado no navegador. Faça login novamente.");
+        window.location.href = 'index.html';
+        return;
+    }
 
-            const { error } = await _supabase
-                .from('usuarios')
-                .update({ senha: nova })
-                .eq('cpf', cpfLogado);
+    if (nova !== confirma) {
+        alert("As senhas não coincidem!");
+        return;
+    }
 
-            if (error) {
-                alert("Erro ao atualizar: " + error.message);
-            } else {
-                alert("✅ Senha alterada com sucesso!");
-                fecharModalSenha();
-            }
-        };
+    // 2. Tenta atualizar na tabela 'usuarios'
+    // IMPORTANTE: Verifique se o nome da coluna no seu banco é 'senha' e 'cpf'
+    const { data, error } = await _supabase
+        .from('usuarios')
+        .update({ senha: nova }) 
+        .eq('cpf', cpfLogado)
+        .select();
+
+    if (error) {
+        console.error("Erro detalhado do Supabase:", error);
+        alert("Erro ao salvar no banco: " + error.message);
+    } else {
+        console.log("Resultado da atualização:", data);
+        if (data.length === 0) {
+            alert("Erro: O CPF logado não foi encontrado na tabela usuários.");
+        } else {
+            alert("✅ Senha alterada com sucesso!");
+            fecharModalSenha();
+        }
+    }
+};
     </script>
 </body>
 </html>
+
 
