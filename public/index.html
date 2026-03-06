@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Carômetro SENAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --senai-red: #E30613; }
+        .bg-senai { background-color: var(--senai-red); }
+        .text-senai { color: var(--senai-red); }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-8 border-red-600">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black text-senai tracking-tighter">SENAI</h1>
+            <p class="text-gray-500 uppercase text-xs font-bold tracking-widest">Carômetro Digital</p>
+        </div>
+
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700">NIF DO FUNCIONÁRIO</label>
+                <input type="text" id="nif" required class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500" placeholder="00000000">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700">SENHA</label>
+                <input type="password" id="password" required class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full bg-senai text-white py-3 rounded-md hover:bg-red-700 transition font-bold shadow-lg">ENTRAR</button>
+        </form>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+     const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById('loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const nifFornecido = document.getElementById('nif').value;
+    const senhaFornecida = document.getElementById('password').value;
+
+    // Busca o funcionário na tabela 'usuarios' que criamos no SQL
+    const { data: usuario, error } = await _supabase
+        .from('usuarios')
+        .select('*')
+        .eq('nif', nifFornecido)
+        .single();
+
+    if (error || !usuario) {
+        alert("❌ Funcionário não encontrado (NIF incorreto).");
+        return;
+    }
+
+    // Verifica a senha (em um sistema real usaríamos hash, aqui é comparação direta)
+    if (usuario.senha === senhaFornecida) {
+        
+        // Alerta de senha padrão (Senai1234)
+        if (senhaFornecida === "Senai1234") {
+            alert("⚠️ SEGURANÇA: Você está usando a senha padrão. \nTroque sua senha no primeiro acesso!");
+        }
+
+        // Salva uma pequena sessão no navegador para saber quem logou
+        localStorage.setItem('usuario_nif', usuario.nif);
+
+        // REDIRECIONAMENTO: Vai para a página principal
+        window.location.href = "dashboard.html";
+        
+    } else {
+        alert("❌ Senha incorreta!");
+    }
+};
+    </script>
+</body>
+</html>

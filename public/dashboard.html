@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carômetro SENAI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Variáveis de Cores SENAI */
+    :root {
+        --senai-red: #E30613;
+        --senai-dark: #1a1a1a;
+    }
+
+    /* Container do Grid */
+    #alunoGrid {
+        gap: 1.5rem;
+        padding: 1rem;
+    }
+
+    /* O Card: Design Moderno */
+    .aluno-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .aluno-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--senai-red);
+    }
+
+    /* A Foto: Redonda com Anel de Destaque */
+    .foto-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .foto-redonda {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px var(--senai-red);
+        background-color: #f1f5f9;
+    }
+
+    /* Tipografia */
+    .aluno-nome {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--senai-dark);
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+        min-height: 2.4em; /* Mantém o tamanho fixo para 2 linhas */
+        
+        /* SOLUÇÃO PARA O ERRO: */
+        display: -webkit-box;       /* Define um container flexbox especial */
+        -webkit-line-clamp: 2;      /* Número de linhas desejado */
+        -webkit-box-orient: vertical; /* Direção do corte */
+        overflow: hidden;           /* Esconde o que sobrar */
+        text-overflow: ellipsis;    /* Adiciona os "..." no final */
+    }
+    .aluno-turma {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-bottom: 1rem;
+    }
+
+    /* Badges Minimalistas */
+    .badge-group {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-top: auto;
+    }
+
+    .badge-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 900;
+        color: white;
+    }
+
+    /* Overlay de Evadido */
+    .status-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 20px;
+        z-index: 5;
+    }
+
+    .status-tag {
+        background: #000;
+        color: #fff;
+        font-size: 8px;
+        font-weight: 900;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transform: rotate(-10deg);
+    }
+
+    /* Botão de Edição */
+    .btn-edit-float {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        color: var(--senai-red);
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        opacity: 0;
+        transition: all 0.2s;
+        z-index: 10;
+    }
+
+    .aluno-card:hover .btn-edit-float {
+        opacity: 1;
+    }
+    </style>
+</head>
+<body class="bg-gray-100 pb-10">
+
+<header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
+    <div class="flex items-center gap-4">
+        <span class="font-black text-2xl tracking-tighter">SENAI</span>
+        <h1 class="hidden md:block text-sm font-light border-l pl-4 border-white/30">Carômetro Digital</h1>
+    </div>
+    <div class="flex gap-2">
+        <button onclick="abrirModalAvulso()" class="bg-white text-red-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-gray-100">+ ALUNO</button>
+        <a href="cadastro.html" class="bg-black/20 text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/30">CADASTRAR TURMA</a>
+        <button onclick="logout()" class="p-2 hover:text-gray-200"><i class="fa fa-sign-out-alt"></i></button>
+    </div>
+</header>
+
+<section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase">Pesquisar</label>
+            <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full p-2 border rounded-lg text-sm outline-red-500">
+        </div>
+        
+        <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase">Filtrar Turma</label>
+            <div class="flex gap-2">
+                <select id="selectTurma" onchange="filtrarAlunos()" class="flex-1 p-2 border rounded-lg text-sm outline-red-500">
+                    <option value="">Todas as Turmas Ativas</option>
+                    <option value="ARQUIVADAS">📦 Alunos Formados (Arquivados)</option>
+                </select>
+                <button onclick="abrirGestaoTurmas()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 border" title="Gerenciar Turmas">
+                    <i class="fa fa-cog text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 flex gap-2 overflow-x-auto pb-1">
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-purple-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">PCD</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-blue-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">REP</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fAAPM" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-green-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">AAPM</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fNPAADC" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-orange-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">NPAADC</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fSKILLS" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-yellow-500 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">SKILLS</span></label>
+        </div>
+    </div>
+</section>
+
+<main id="alunoGrid" class="container mx-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
+
+<div id="modalGestaoTurmas" class="hidden fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+            <h3 class="font-bold text-gray-700 uppercase text-sm">Gerenciar Turmas</h3>
+            <button onclick="fecharGestao()" class="text-2xl hover:text-red-600">&times;</button>
+        </div>
+        <div class="p-4">
+            <div id="listaTurmasGestao" class="space-y-2 max-h-64 overflow-y-auto mb-4"></div>
+            <p class="text-[9px] text-red-500 italic">* Arquivar move os alunos para 'Formados'. Excluir apaga permanentemente.</p>
+        </div>
+    </div>
+</div>
+
+<div id="modalEdicao" class="hidden fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+            <h3 id="modalTitle" class="font-bold text-gray-700 uppercase">Editar Aluno</h3>
+            <button onclick="fecharModal()" class="text-2xl hover:text-red-600">&times;</button>
+        </div>
+        <form id="formAluno" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-left">
+            <input type="hidden" id="editId">
+            <div class="flex flex-col items-center gap-2">
+                <img id="editFotoPrevia" src="" class="foto-redonda shadow-lg">
+                <label class="text-[10px] bg-red-600 text-white px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-700 font-bold uppercase">
+                    <i class="fa fa-camera mr-1"></i> Alterar Foto
+                    <input type="file" id="inputFotoManual" class="hidden" accept="image/*" onchange="previewFoto(this)">
+                </label>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Nome Completo</label>
+                    <input type="text" id="editNome" required class="w-full border-b-2 p-1 focus:border-red-600 outline-none text-sm uppercase">
+                </div>
+                <div><label class="text-[10px] font-bold text-gray-400 uppercase">Turma</label><input type="text" id="editTurma" class="w-full border-b-2 p-1 outline-none text-sm uppercase"></div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Status</label>
+                    <select id="editStatus" class="w-full border-b-2 p-1 text-sm">
+                        <option value="Ativo">Ativo</option>
+                        <option value="Evadido">Evadido</option>
+                        <option value="Formado">Formado (Arquivar)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">PCD / Transtornos</label>
+                    <select id="editPCD" class="w-full border-b-2 p-1 text-sm">
+                        <option value="">Nenhum</option>
+                        <optgroup label="Transtornos">
+                            <option>Dislexia</option><option>Discalculia</option><option>Disortografia</option><option>Disgrafia</option><option>TPAC</option><option>TDAH</option><option>TOC</option><option>Ansiedade</option><option>Pânico</option><option>Depressão</option>
+                        </optgroup>
+                        <optgroup label="Deficiências">
+                            <option>Baixa Visão</option><option>Cegueira</option><option>Visão Monocular</option><option>Deficiência Auditiva</option><option>Deficiência Física</option><option>Deficiência Intelectual</option><option>Surdez</option><option>Surdocegueira</option><option>TEA</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="md:col-span-2 grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border">
+                    <label class="flex items-center gap-2 text-xs font-bold text-blue-800"><input type="checkbox" id="editRep"> REPRESENTANTE</label>
+                    <label class="flex items-center gap-2 text-xs font-bold text-green-700"><input type="checkbox" id="editAAPM"> AAPM</label>
+                    <label class="flex items-center gap-2 text-xs font-bold text-orange-600"><input type="checkbox" id="editNPAADC"> NPAADC</label>
+                    <label class="flex items-center gap-2 text-xs font-bold text-yellow-600"><input type="checkbox" id="editSkills"> SP SKILLS</label>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-4">
+                <button type="button" onclick="salvarAluno()" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-red-700 transition uppercase">Salvar Alterações</button>
+                <button type="button" id="btnExcluir" onclick="excluirAluno()" class="bg-gray-100 text-gray-400 p-3 rounded-xl hover:text-red-600 transition"><i class="fa fa-trash"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // NORMALIZAÇÃO DE NOMES (Remove acentos e prepara para URL)
+    function normalizarParaArquivo(texto) {
+        return texto.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_').replace(/[^a-z0-0_]/g, '');
+    }
+
+    async function carregarTurmas() {
+        const { data } = await _supabase.from('alunos').select('turma').eq('arquivado', false);
+        const turmasUnicas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
+        const select = document.getElementById('selectTurma');
+        // Limpa opções antigas exceto as duas primeiras
+        select.innerHTML = '<option value="">Todas as Turmas Ativas</option><option value="ARQUIVADAS">📦 Alunos Formados (Arquivados)</option>';
+        turmasUnicas.forEach(t => select.innerHTML += `<option value="${t}">${t}</option>`);
+    }
+
+    async function filtrarAlunos() {
+        const busca = document.getElementById('inputBusca').value;
+        const turma = document.getElementById('selectTurma').value;
+        let query = _supabase.from('alunos').select('*');
+
+        if (turma === 'ARQUIVADAS') query = query.eq('arquivado', true);
+        else {
+            query = query.eq('arquivado', false);
+            if (turma) query = query.eq('turma', turma);
+        }
+
+        if (busca) query = query.ilike('nome_completo', `%${busca}%`);
+        if (document.getElementById('fPCD').checked) query = query.not('pcd_tipo', 'is', null).neq('pcd_tipo', '');
+        if (document.getElementById('fREP').checked) query = query.eq('representante', true);
+        if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
+        if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
+        if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
+
+        const { data: alunos } = await query.order('nome_completo');
+        renderizarCards(alunos || []);
+    }
+
+    function renderizarCards(alunos) {
+    const grid = document.getElementById('alunoGrid');
+    grid.innerHTML = alunos.map(aluno => `
+        <div class="aluno-card group">
+            <button onclick="abrirModalEdicao('${aluno.id}')" class="btn-edit-float hover:scale-110">
+                <i class="fa fa-pen text-[10px]"></i>
+            </button>
+            
+            <div class="foto-container">
+                <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" class="foto-redonda">
+            </div>
+
+            <h3 class="aluno-nome">${aluno.nome_completo}</h3>
+            <p class="aluno-turma">${aluno.turma}</p>
+            
+            <div class="badge-group">
+                ${aluno.representante ? '<div class="badge-icon bg-blue-600" title="Representante">R</div>' : ''}
+                ${aluno.pcd_tipo ? `<div class="badge-icon bg-purple-600" title="${aluno.pcd_tipo}">P</div>` : ''}
+                ${aluno.aapm ? '<div class="badge-icon bg-green-600" title="AAPM">A</div>' : ''}
+                ${aluno.npaadc ? '<div class="badge-icon bg-orange-600" title="NPAADC">N</div>' : ''}
+                ${aluno.spskills ? '<div class="badge-icon bg-yellow-500" title="SP Skills">S</div>' : ''}
+            </div>
+
+            ${aluno.status === 'Evadido' ? `
+                <div class="status-overlay">
+                    <span class="status-tag">EVADIDO</span>
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+    // GESTÃO DE TURMAS
+    async function abrirGestaoTurmas() {
+        const { data } = await _supabase.from('alunos').select('turma').eq('arquivado', false);
+        const turmas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
+        const container = document.getElementById('listaTurmasGestao');
+        container.innerHTML = turmas.length ? turmas.map(t => `
+            <div class="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-200">
+                <span class="text-[11px] font-bold text-gray-700 truncate mr-2">${t}</span>
+                <div class="flex gap-1 flex-shrink-0">
+                    <button onclick="arquivarTurma('${t}')" class="bg-blue-600 text-white px-2 py-1 rounded text-[9px] font-bold">ARQUIVAR</button>
+                    <button onclick="excluirTurma('${t}')" class="bg-red-600 text-white px-2 py-1 rounded text-[9px] font-bold">EXCLUIR</button>
+                </div>
+            </div>
+        `).join('') : '<p class="text-center text-xs text-gray-400 py-4">Nenhuma turma ativa encontrada.</p>';
+        document.getElementById('modalGestaoTurmas').classList.remove('hidden');
+    }
+
+    async function arquivarTurma(nome) {
+        if (!confirm(`Arquivar todos os alunos da turma ${nome}?`)) return;
+        await _supabase.from('alunos').update({ arquivado: true, status: 'Formado' }).eq('turma', nome);
+        location.reload();
+    }
+
+    async function excluirTurma(nome) {
+        if (!confirm(`EXCLUIR PERMANENTEMENTE todos os alunos da turma ${nome}?`)) return;
+        await _supabase.from('alunos').delete().eq('turma', nome);
+        location.reload();
+    }
+
+    function fecharGestao() { document.getElementById('modalGestaoTurmas').classList.add('hidden'); }
+
+    // MODAL ALUNO
+    function previewFoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => document.getElementById('editFotoPrevia').src = e.target.result;
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function abrirModalAvulso() {
+        document.getElementById('formAluno').reset();
+        document.getElementById('editId').value = "";
+        document.getElementById('modalTitle').innerText = "Novo Aluno";
+        document.getElementById('editFotoPrevia').src = 'https://via.placeholder.com/150';
+        document.getElementById('btnExcluir').classList.add('hidden');
+        document.getElementById('modalEdicao').classList.remove('hidden');
+    }
+
+    async function abrirModalEdicao(id) {
+        const { data: aluno } = await _supabase.from('alunos').select('*').eq('id', id).single();
+        document.getElementById('modalTitle').innerText = "Editar Aluno";
+        document.getElementById('editId').value = aluno.id;
+        document.getElementById('editNome').value = aluno.nome_completo;
+        document.getElementById('editTurma').value = aluno.turma;
+        document.getElementById('editStatus').value = aluno.status;
+        document.getElementById('editPCD').value = aluno.pcd_tipo || "";
+        document.getElementById('editRep').checked = aluno.representante;
+        document.getElementById('editAAPM').checked = aluno.aapm;
+        document.getElementById('editNPAADC').checked = aluno.npaadc;
+        document.getElementById('editSkills').checked = aluno.spskills;
+        document.getElementById('editFotoPrevia').src = aluno.foto_url || 'https://via.placeholder.com/150';
+        document.getElementById('btnExcluir').classList.remove('hidden');
+        document.getElementById('modalEdicao').classList.remove('hidden');
+    }
+
+    async function salvarAluno() {
+        const id = document.getElementById('editId').value;
+        const nome = document.getElementById('editNome').value;
+        const fotoFile = document.getElementById('inputFotoManual').files[0];
+        let fotoUrl = document.getElementById('editFotoPrevia').src;
+
+        if (fotoFile) {
+            const ext = fotoFile.name.split('.').pop();
+            const path = `manuais/${normalizarParaArquivo(nome)}_${Date.now()}.${ext}`;
+            const { data } = await _supabase.storage.from('fotos-alunos').upload(path, fotoFile);
+            if (data) fotoUrl = _supabase.storage.from('fotos-alunos').getPublicUrl(path).data.publicUrl;
+        }
+
+        const dados = {
+            nome_completo: nome,
+            turma: document.getElementById('editTurma').value,
+            status: document.getElementById('editStatus').value,
+            pcd_tipo: document.getElementById('editPCD').value,
+            representante: document.getElementById('editRep').checked,
+            aapm: document.getElementById('editAAPM').checked,
+            npaadc: document.getElementById('editNPAADC').checked,
+            spskills: document.getElementById('editSkills').checked,
+            foto_url: fotoUrl,
+            arquivado: document.getElementById('editStatus').value === 'Formado'
+        };
+
+        if (id) await _supabase.from('alunos').update(dados).eq('id', id);
+        else await _supabase.from('alunos').insert([dados]);
+
+        fecharModal();
+        carregarTurmas();
+        filtrarAlunos();
+    }
+
+    async function excluirAluno() {
+        const id = document.getElementById('editId').value;
+        if (id && confirm("Excluir este aluno permanentemente?")) {
+            await _supabase.from('alunos').delete().eq('id', id);
+            fecharModal();
+            filtrarAlunos();
+        }
+    }
+
+    function fecharModal() { document.getElementById('modalEdicao').classList.add('hidden'); }
+    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+    window.onload = () => { carregarTurmas(); filtrarAlunos(); };
+</script>
+</body>
+</html>

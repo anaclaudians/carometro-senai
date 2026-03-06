@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carômetro SENAI - Consulta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+       /* Variáveis de Cores SENAI */
+    :root {
+        --senai-red: #E30613;
+        --senai-dark: #1a1a1a;
+    }
+
+    /* Container do Grid */
+    #alunoGrid {
+        gap: 1.5rem;
+        padding: 1rem;
+    }
+
+    /* O Card: Design Moderno */
+    .aluno-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .aluno-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--senai-red);
+    }
+
+    /* A Foto: Redonda com Anel de Destaque */
+    .foto-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .foto-redonda {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px var(--senai-red);
+        background-color: #f1f5f9;
+    }
+
+    /* Tipografia */
+    .aluno-nome {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--senai-dark);
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+        min-height: 2.4em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .aluno-turma {
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-bottom: 1rem;
+    }
+
+    /* Badges Minimalistas */
+    .badge-group {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-top: auto;
+    }
+
+    .badge-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 900;
+        color: white;
+    }
+
+    .status-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.4); /* Fundo semi-transparente */
+    backdrop-filter: blur(1px);          /* Leve desfoque */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    z-index: 5;
+    pointer-events: none;                /* Permite clicar no card mesmo com o overlay */
+}
+
+.status-tag {
+    background: #000;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 900;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transform: rotate(-10deg);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+    /* Botão de Edição */
+    .btn-edit-float {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        color: var(--senai-red);
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        opacity: 0;
+        transition: all 0.2s;
+        z-index: 10;
+    }
+
+    .aluno-card:hover .btn-edit-float {
+        opacity: 1;
+    }
+    /* Efeito de clique no card */
+.aluno-card {
+    cursor: pointer;
+}
+.aluno-card:active {
+    transform: scale(0.95);
+}
+
+/* Animação de entrada do Modal */
+#modalZoom:not(.hidden) .bg-white {
+    animation: zoomIn 0.3s ease-out forwards;
+}
+
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+/* Efeito de clique no card */
+.aluno-card {
+    cursor: pointer;
+}
+.aluno-card:active {
+    transform: scale(0.95);
+}
+
+/* Animação de entrada do Modal */
+#modalZoom:not(.hidden) .bg-white {
+    animation: zoomIn 0.3s ease-out forwards;
+}
+
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+    </style>
+</head>
+<body class="bg-gray-100 pb-10">
+
+<header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
+    <div class="flex items-center gap-4">
+        <span class="font-black text-2xl tracking-tighter">SENAI</span>
+        <h1 class="text-sm font-light border-l pl-4 border-white/30">Consulta de Alunos</h1>
+    </div>
+    <div class="text-[10px] font-bold opacity-70 uppercase">Modo Visualização</div>
+</header>
+
+<section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase">Pesquisar</label>
+            <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full p-2 border rounded-lg text-sm outline-red-500">
+        </div>
+        
+        <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase">Filtrar Turma</label>
+            <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2 border rounded-lg text-sm outline-red-500">
+                <option value="">Todas as Turmas Ativas</option>
+            </select>
+        </div>
+
+        <div class="md:col-span-2 flex gap-2 overflow-x-auto pb-1">
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-purple-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">PCD</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-blue-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">REP</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fAAPM" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-green-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">AAPM</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fNPAADC" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-orange-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">NPAADC</span></label>
+            <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fSKILLS" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-yellow-500 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">SKILLS</span></label>
+        </div>
+    </div>
+</section>
+
+<main id="alunoGrid" class="container mx-auto p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
+
+<script>
+    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+   async function carregarTurmas() {
+    console.log("Buscando turmas..."); // Verificação no console (F12)
+    const { data, error } = await _supabase
+        .from('alunos')
+        .select('turma')
+        .eq('arquivado', false);
+
+    if (error) {
+        console.error("Erro ao carregar turmas:", error);
+        return;
+    }
+
+    // Extrai nomes únicos e remove nulos/vazios
+    const turmasUnicas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
+    
+    const select = document.getElementById('selectTurma');
+    
+    // Mantém a opção padrão e limpa o resto
+    select.innerHTML = '<option value="">Todas as Turmas Ativas</option>';
+    
+    // Adiciona as turmas encontradas
+    turmasUnicas.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        select.appendChild(option);
+    });
+    
+    console.log("Turmas carregadas:", turmasUnicas);
+}
+
+    async function filtrarAlunos() {
+        const busca = document.getElementById('inputBusca').value;
+        const turma = document.getElementById('selectTurma').value;
+        let query = _supabase.from('alunos').select('*').eq('arquivado', false);
+
+        if (turma) query = query.eq('turma', turma);
+        if (busca) query = query.ilike('nome_completo', `%${busca}%`);
+        if (document.getElementById('fPCD').checked) query = query.not('pcd_tipo', 'is', null).neq('pcd_tipo', '');
+        if (document.getElementById('fREP').checked) query = query.eq('representante', true);
+        if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
+        if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
+        if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
+
+        const { data: alunos } = await query.order('nome_completo');
+        renderizarCards(alunos || []);
+    }
+
+    // Atualizada para incluir o clique (onclick)
+function renderizarCards(alunos) {
+    const grid = document.getElementById('alunoGrid');
+    
+    // Se não houver alunos, mostra uma mensagem amigável
+    if (!alunos || alunos.length === 0) {
+        grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10 font-medium">Nenhum aluno encontrado com estes filtros.</p>';
+        return;
+    }
+
+    grid.innerHTML = alunos.map(aluno => {
+        // Verifica se o aluno é evadido para aplicar estilos especiais
+        const isEvadido = aluno.status === 'Evadido';
+        
+        return `
+            <div class="aluno-card group ${isEvadido ? 'grayscale-[0.5]' : ''}" 
+                 onclick="abrirZoom(${JSON.stringify(aluno).replace(/"/g, '&quot;')})">
+                
+                <div class="foto-container relative">
+                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
+                         class="foto-redonda ${isEvadido ? 'opacity-60' : ''}">
+                    
+                    ${isEvadido ? `
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="bg-black text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg">EVADIDO</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <h3 class="aluno-nome ${isEvadido ? 'text-gray-400' : ''}">${aluno.nome_completo}</h3>
+                <p class="aluno-turma">${aluno.turma}</p>
+                
+                <div class="badge-group ${isEvadido ? 'opacity-30' : ''}">
+                    ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
+                    ${aluno.pcd_tipo ? `<div class="badge-icon bg-purple-600">P</div>` : ''}
+                    ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
+                    ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
+                    ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
+                </div>
+
+                ${isEvadido ? `
+                    <div class="status-overlay">
+                        <span class="status-tag">EVADIDO</span>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Funções para controlar o Zoom
+// Funções para controlar o Zoom (Card Ampliado)
+function abrirZoom(aluno) {
+    const isEvadido = aluno.status === 'Evadido';
+    
+    // Define a foto e aplica grayscale se for evadido
+    const fotoElement = document.getElementById('zoomFoto');
+    fotoElement.src = aluno.foto_url || 'https://via.placeholder.com/150';
+    
+    if (isEvadido) {
+        fotoElement.classList.add('grayscale', 'opacity-50');
+    } else {
+        fotoElement.classList.remove('grayscale', 'opacity-50');
+    }
+
+    document.getElementById('zoomNome').innerText = aluno.nome_completo;
+    document.getElementById('zoomTurma').innerText = aluno.turma;
+    
+    const badgeContainer = document.getElementById('zoomBadges');
+    let badgesHtml = '';
+
+    // ADICIONADO: Tag de Evadido em destaque no topo dos badges
+    if (isEvadido) {
+        badgesHtml += `<div class="px-4 py-2 bg-black text-white rounded-lg text-[11px] font-black tracking-tighter shadow-xl animate-pulse">ALUNO EVADIDO</div>`;
+    }
+    
+    if (aluno.representante) badgesHtml += `<div class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black border border-blue-200">REPRESENTANTE</div>`;
+    if (aluno.pcd_tipo) badgesHtml += `<div class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-black border border-purple-200">PCD: ${aluno.pcd_tipo}</div>`;
+    if (aluno.aapm) badgesHtml += `<div class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-black border border-green-200">AAPM</div>`;
+    if (aluno.npaadc) badgesHtml += `<div class="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black border border-orange-200">NPAADC</div>`;
+    if (aluno.spskills) badgesHtml += `<div class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-[10px] font-black border border-yellow-200">SP SKILLS</div>`;
+
+    badgeContainer.innerHTML = badgesHtml;
+    document.getElementById('modalZoom').classList.remove('hidden');
+}
+function fecharZoom() {
+    document.getElementById('modalZoom').classList.add('hidden');
+}
+
+window.onload = async () => { 
+    await carregarTurmas(); // Carrega o select primeiro
+    filtrarAlunos();        // Depois carrega os cards
+};
+</script>
+<div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
+    <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all scale-95" onclick="event.stopPropagation()">
+       <div class="relative">
+    <img id="zoomFoto" src="" class="w-full h-80 object-cover transition-all duration-500">
+    
+    <div id="avisoEvadidoZoom" class="hidden absolute inset-0 bg-black/20 flex items-center justify-center">
+        <span class="bg-black text-white px-6 py-2 font-black text-sm tracking-widest rotate-[-10deg] shadow-2xl border-2 border-white">EVADIDO</span>
+    </div>
+
+    <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full z-10">&times;</button>
+</div>
+
+
+        
+        <div class="p-8 text-center">
+            <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase leading-tight mb-2"></h2>
+            <p id="zoomTurma" class="text-sm font-bold text-red-600 uppercase tracking-widest mb-6"></p>
+            
+            <div id="zoomBadges" class="flex justify-center gap-2">
+                </div>
+        </div>
+    </div>
+</div>
+<div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
+    <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all scale-95" onclick="event.stopPropagation()">
+       <div class="relative">
+    <img id="zoomFoto" src="" class="w-full h-80 object-cover transition-all duration-500">
+    
+    <div id="avisoEvadidoZoom" class="hidden absolute inset-0 bg-black/20 flex items-center justify-center">
+        <span class="bg-black text-white px-6 py-2 font-black text-sm tracking-widest rotate-[-10deg] shadow-2xl border-2 border-white">EVADIDO</span>
+    </div>
+
+    <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full z-10">&times;</button>
+</div>
+        <div class="p-8 text-center">
+            <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase leading-tight mb-2"></h2>
+            <p id="zoomTurma" class="text-sm font-bold text-red-600 uppercase tracking-widest mb-6"></p>
+            
+            <div id="zoomBadges" class="flex justify-center gap-2">
+                </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
