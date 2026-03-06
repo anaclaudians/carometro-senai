@@ -499,6 +499,41 @@ async function gerarPDF() {
         botao.disabled = false;
     }
 }
+    // ... dentro do mapeamento dos cards ...
+    return `
+        <td style="width: 25%; padding: 4px; vertical-align: top;">
+            <div style="border: 1px solid #ccc; border-radius: 6px; padding: 8px 4px; text-align: center; height: 135px; position: relative; background: white; display: flex; flex-direction: column; align-items: center;">
+                
+                <img src="${foto}" style="width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isEvadido ? '#ddd' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.4;' : ''}">
+                
+                <div style="
+                    font-size: 8.5px; 
+                    font-weight: 800; 
+                    margin: 8px 0; 
+                    text-transform: uppercase; 
+                    color: ${isEvadido ? '#999' : '#000'}; 
+                    line-height: 1.2; 
+                    height: 2.4em; 
+                    display: flex; 
+                    align-items: center;    /* Centraliza verticalmente */
+                    justify-content: center; /* Centraliza horizontalmente */
+                    text-align: center; 
+                    width: 100%; 
+                    overflow: hidden;
+                ">
+                    ${nome}
+                </div>
+
+                <div style="display: flex; gap: 2px; justify-content: center; margin-top: auto; padding-bottom: 2px;">
+                    ${badges}
+                </div>
+
+                ${isEvadido ? `
+                    <div style="position: absolute; top: 35px; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 2px 0; transform: rotate(-10deg); text-align: center; z-index: 10;">EVADIDO</div>
+                ` : ''}
+            </div>
+        </td>
+    `;
 </script>
 <div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
     <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all scale-95" onclick="event.stopPropagation()">
@@ -545,6 +580,7 @@ async function gerarPDF() {
 </div>
 </body>
 </html>
+
 
 
 
