@@ -50,6 +50,17 @@
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        @media print {
+    #alunoGrid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important; /* Força 4 colunas no papel A4 */
+        gap: 10px !important;
+    }
+    .aluno-card {
+        break-inside: avoid; /* Evita que um card seja cortado entre duas páginas */
+        border: 1px solid #ddd !important;
+    }
+}
     </style>
 </head>
 <body class="pb-10">
@@ -207,23 +218,44 @@
 
         function fecharZoom() { document.getElementById('modalZoom').classList.add('hidden'); }
 
-        async function gerarPDF() {
-            const btn = event.currentTarget;
-            const original = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            const grid = document.getElementById('alunoGrid');
-            const opt = { margin: 10, filename: 'carometro.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }};
-            try { await html2pdf().set(opt).from(grid).save(); } 
-            finally { btn.innerHTML = original; }
-        }
+       async function gerarPDF() {
+    const elemento = document.getElementById('alunoGrid');
+    const turmaSelecionada = document.getElementById('selectTurma').value || "Geral";
+    
+    // Mostra um aviso de carregamento (opcional)
+    const btn = event.currentTarget;
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> GERANDO...';
 
-        window.onload = async () => {
-            await carregarTurmas();
-            await filtrarAlunos();
-        };
+    const opcoes = {
+        margin: [10, 5, 10, 5], // margens: cima, esquerda, baixo, direita
+        filename: `Carometro_SENAI_${turmaSelecionada}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, // ESSENCIAL para carregar fotos do Supabase no PDF
+            letterRendering: true
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait' 
+        }
+    };
+
+    try {
+        await html2pdf().set(opcoes).from(elemento).save();
+    } catch (erro) {
+        console.error("Erro ao gerar PDF:", erro);
+        alert("Erro ao gerar o arquivo. Verifique se as fotos carregaram corretamente.");
+    } finally {
+        btn.innerHTML = textoOriginal;
+    }
+}
     </script>
 </body>
 </html>
+
 
 
 
