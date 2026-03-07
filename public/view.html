@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-   <link rel="icon" type="image/png" href="imagem/favicon.png">
+    <link rel="icon" type="image/png" href="imagem/favicon.png">
+    
     <style>
         :root { --senai-red: #E30613; }
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -21,7 +22,8 @@
             position: relative; cursor: pointer;
         }
         .aluno-card:hover { 
-            transform: translateY(-5px); shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
             border-color: var(--senai-red); 
         }
 
@@ -47,13 +49,6 @@
             border-radius: 5px; justify-content: center; align-items: center; 
         }
 
-        /* Cores das Badges */
-        .bg-blue-600 { background-color: #2563eb !important; }
-        .bg-purple-600 { background-color: #9333ea !important; }
-        .bg-green-600 { background-color: #16a34a !important; }
-        .bg-orange-600 { background-color: #ea580c !important; }
-        .bg-yellow-500 { background-color: #eab308 !important; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -62,10 +57,9 @@
     <header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div class="bg-white p-1 rounded">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_Logo.png" class="h-4 md:h-6" alt="SENAI" onerror="this.style.display='none'">
-                <span class="text-red-600 font-black text-xl md:hidden">SENAI</span>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_Logo.png" class="h-4 md:h-6" alt="SENAI">
             </div>
-            <h1 class="hidden md:block text-xl font-black tracking-tighter">CARÔMETRO</h1>
+            <h1 class="hidden md:block text-xl font-black tracking-tighter uppercase">Carômetro</h1>
         </div>
         
         <div class="flex gap-2">
@@ -103,19 +97,19 @@
     <main id="alunoGrid" class="container mx-auto p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         <div class="col-span-full text-center py-20 text-gray-400">
             <i class="fas fa-circle-notch fa-spin text-3xl mb-4"></i>
-            <p class="text-xs font-bold uppercase tracking-widest">Carregando Alunos...</p>
+            <p class="text-xs font-bold uppercase tracking-widest">Carregando dados...</p>
         </div>
     </main>
 
     <div id="modalZoom" class="hidden fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-4 backdrop-blur-sm" onclick="fecharZoom()">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300" onclick="event.stopPropagation()">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
             <div class="relative">
                 <img id="zoomFoto" src="" class="w-full h-80 object-cover bg-gray-100">
-                <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-white text-black w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg">&times;</button>
+                <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-white text-black w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold">&times;</button>
             </div>
             <div class="p-8 text-center">
-                <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase leading-tight mb-1"></h2>
-                <p id="zoomTurma" class="text-xs font-bold text-red-600 uppercase mb-6 tracking-tighter"></p>
+                <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase mb-1"></h2>
+                <p id="zoomTurma" class="text-xs font-bold text-red-600 uppercase mb-6"></p>
                 <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
             </div>
         </div>
@@ -131,196 +125,76 @@
             window.location.href = "index.html";
         }
 
-        // 1. CARREGAR TURMAS NO SELECT
         async function carregarTurmas() {
             try {
                 const { data, error } = await _supabase.from('alunos').select('turma');
                 if (error) throw error;
-                
                 const turmasUnicas = [...new Set(data.map(a => a.turma))].filter(Boolean).sort();
                 const select = document.getElementById('selectTurma');
-                
-                // Limpa opções exceto a primeira
                 select.innerHTML = '<option value="">Todas as Turmas</option>';
-                
                 turmasUnicas.forEach(t => {
                     const opt = document.createElement('option');
                     opt.value = t; opt.textContent = t;
                     select.appendChild(opt);
                 });
-            } catch (err) {
-                console.error("Erro ao carregar turmas:", err.message);
+            } catch (err) { console.error("Erro turmas:", err.message); }
+        }
+
+        async function filtrarAlunos() {
+            const grid = document.getElementById('alunoGrid');
+            const busca = document.getElementById('inputBusca').value.toLowerCase();
+            const turmaSelecionada = document.getElementById('selectTurma').value;
+            
+            let query = _supabase.from('alunos').select('*');
+
+            if (turmaSelecionada) query = query.eq('turma', turmaSelecionada);
+            
+            if (document.getElementById('fPCD').checked) {
+                query = query.neq('pcd_tipo', '').not('pcd_tipo', 'is', null);
             }
-        }
+            if (document.getElementById('fREP').checked) query = query.eq('representante', true);
+            if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
+            if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
+            if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
 
-        // 2. FUNÇÃO PRINCIPAL DE FILTRO E CARGA
-       
-async function filtrarAlunos() {
-    const grid = document.getElementById('alunoGrid');
-    const busca = document.getElementById('inputBusca').value.toLowerCase();
-    const turmaSelecionada = document.getElementById('selectTurma').value;
-    
-    // Inicia a query básica
-    let query = _supabase.from('alunos').select('*');
+            try {
+                const { data: alunos, error } = await query.order('nome_completo');
+                if (error) throw error;
 
-    // 1. Filtro de Turma
-    if (turmaSelecionada) {
-        query = query.eq('turma', turmaSelecionada);
-    }
-    
-    // 2. Filtro PCD (Correção Crítica)
-    // Em vez de apenas "não nulo", filtramos quem tem texto preenchido e diferente de vazio
-    if (document.getElementById('fPCD').checked) {
-        query = query.neq('pcd_tipo', '').not('pcd_tipo', 'is', null);
-    }
-
-    // 3. Outros Filtros de Badges
-    if (document.getElementById('fREP').checked) query = query.eq('representante', true);
-    if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
-    if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
-    if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
-
-    try {
-        const { data: alunos, error } = await query.order('nome_completo');
-        if (error) throw error;
-
-        // 4. Filtro de Nome (Client-side para busca dinâmica)
-        const filtrados = alunos.filter(a => 
-            a.nome_completo && a.nome_completo.toLowerCase().includes(busca)
-        );
-        
-        // 5. Renderização
-        if (filtrados.length === 0) {
-            grid.innerHTML = `
-                <div class="col-span-full text-center py-20 text-gray-400">
-                    <p class="font-bold uppercase text-xs tracking-widest">Nenhum resultado para estes filtros</p>
-                </div>`;
-            return;
-        }
-
-        grid.innerHTML = filtrados.map(aluno => {
-            const isEvadido = aluno.status === 'Evadido';
-            const alunoJSON = JSON.stringify(aluno).replace(/'/g, "&apos;");
-            
-            // Verificação visual da badge PCD
-            const temPCD = aluno.pcd_tipo && aluno.pcd_tipo.trim() !== "";
-
-            return `
-                <div class="aluno-card" onclick='abrirZoom(${alunoJSON})'>
-                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
-                         class="foto-redonda ${isEvadido ? 'grayscale opacity-40' : ''}">
-                    <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight h-6 overflow-hidden">${aluno.nome_completo}</h3>
-                    <p class="text-[9px] font-bold text-gray-400 mt-1">${aluno.turma}</p>
-                    <div class="flex gap-1 mt-3">
-                        ${aluno.representante ? '<div class="badge-icon bg-blue-600" title="Representante">R</div>' : ''}
-                        ${temPCD ? '<div class="badge-icon bg-purple-600" title="PCD: ${aluno.pcd_tipo}">P</div>' : ''}
-                        ${aluno.aapm ? '<div class="badge-icon bg-green-600" title="AAPM">A</div>' : ''}
-                        ${aluno.npaadc ? '<div class="badge-icon bg-orange-600" title="NPAADC">N</div>' : ''}
-                        ${aluno.spskills ? '<div class="badge-icon bg-yellow-500" title="SP Skills">S</div>' : ''}
-                    </div>
-                    ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
-                </div>`;
-        }).join('');
-
-    } catch (err) {
-        console.error("Erro na busca:", err.message);
-        grid.innerHTML = `<div class="col-span-full text-center text-red-500 font-bold">Erro ao carregar dados.</div>`;
-    }
-}
-    // Configurações de Conexão
-    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ'; // <-- SUBSTITUA PELA SUA KEY ANON (A COMPRIDA)
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // FUNÇÃO PARA REMOVER ACENTOS E CARACTERES ESPECIAIS (Crucial para as fotos carregarem)
-    function normalizarTexto(texto) {
-        return texto.toString().toLowerCase().trim()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-            .replace(/[^\w\s]/gi, '')       // Remove símbolos exceto letras e espaços
-            .replace(/\s+/g, '_');          // Troca espaços por underline
-    }
-
-    function atualizarContagem() {
-        const files = document.getElementById('inputFotos').files;
-        document.getElementById('contagemFotos').innerText = `${files.length} fotos selecionadas`;
-    }
-
-    async function cruzarDados() {
-        const turma = document.getElementById('turmaNome').value.trim();
-        const nomesRaw = document.getElementById('listaNomes').value.split('\n').filter(n => n.trim() !== "");
-        const fotos = document.getElementById('inputFotos').files;
-        const log = document.getElementById('log');
-
-        if(!turma || nomesRaw.length === 0) {
-            alert("Preencha o nome da turma e cole a lista de alunos!");
-            return;
-        }
-
-        log.classList.remove('hidden');
-        log.innerHTML = `> [${new Date().toLocaleTimeString()}] Iniciando processamento de ${nomesRaw.length} alunos...<br><hr class='border-gray-800 my-2'>`;
-
-        for (let nomeOriginal of nomesRaw) {
-            const nomeLimpo = nomeOriginal.trim();
-            const nomeNormalizado = normalizarTexto(nomeLimpo); // joao_silva
-            
-            // Busca a foto ignorando acentos no nome do arquivo original
-            const fotoMatch = Array.from(fotos).find(f => {
-                const nomeArquivoNormalizado = normalizarTexto(f.name.split('.')[0]);
-                return nomeArquivoNormalizado === nomeNormalizado || nomeArquivoNormalizado.includes(nomeNormalizado);
-            });
-
-            let publicUrl = "";
-
-            if (fotoMatch) {
-                const extensao = fotoMatch.name.split('.').pop();
-                // Nome do arquivo no Storage SEM ACENTOS
-                const fileName = `${normalizarTexto(turma)}/${nomeNormalizado}_${Date.now()}.${extensao}`;
-
-                const { data: uploadData, error: uploadError } = await _supabase.storage
-                    .from('fotos-alunos')
-                    .upload(fileName, fotoMatch);
-
-                if (uploadError) {
-                    console.error("Erro no upload:", uploadError);
-                    log.innerHTML += `<span class="text-yellow-500">> Erro ao subir foto de: ${nomeLimpo}</span><br>`;
-                } else {
-                    const { data: urlData } = _supabase.storage.from('fotos-alunos').getPublicUrl(fileName);
-                    publicUrl = urlData.publicUrl;
+                const filtrados = alunos.filter(a => a.nome_completo?.toLowerCase().includes(busca));
+                
+                if (filtrados.length === 0) {
+                    grid.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400 font-bold uppercase text-xs">Nenhum aluno encontrado</p>';
+                    return;
                 }
-            } else {
-                log.innerHTML += `<span class="text-gray-500">> Foto não encontrada para: ${nomeLimpo} (usando padrão)</span><br>`;
-            }
 
-            // Inserir no Banco de Dados
-            const { error: dbError } = await _supabase.from('alunos').insert([{
-                nome_completo: nomeLimpo,
-                turma: turma,
-                foto_url: publicUrl,
-                status: 'Ativo',
-                arquivado: false
-            }]);
-
-            if (!dbError) {
-                log.innerHTML += `<span class="text-green-400">> ✅ ${nomeLimpo} cadastrado com sucesso.</span><br>`;
-            } else {
-                log.innerHTML += `<span class="text-red-500">> ❌ Erro ao salvar ${nomeLimpo}: ${dbError.message}</span><br>`;
-            }
-            
-            // Auto-scroll do log
-            log.scrollTop = log.scrollHeight;
+                grid.innerHTML = filtrados.map(aluno => {
+                    const isEvadido = aluno.status === 'Evadido';
+                    const temPCD = aluno.pcd_tipo && aluno.pcd_tipo.trim() !== "";
+                    const alunoJSON = JSON.stringify(aluno).replace(/'/g, "&apos;");
+                    
+                    return `
+                        <div class="aluno-card" onclick='abrirZoom(${alunoJSON})'>
+                            <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" class="foto-redonda ${isEvadido ? 'grayscale opacity-40' : ''}">
+                            <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight h-6 overflow-hidden">${aluno.nome_completo}</h3>
+                            <p class="text-[9px] font-bold text-gray-400 mt-1">${aluno.turma}</p>
+                            <div class="flex gap-1 mt-3">
+                                ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
+                                ${temPCD ? '<div class="badge-icon bg-purple-600">P</div>' : ''}
+                                ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
+                                ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
+                                ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
+                            </div>
+                            ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
+                        </div>`;
+                }).join('');
+            } catch (err) { console.error("Erro busca:", err.message); }
         }
-        
-        log.innerHTML += `<hr class='border-gray-800 my-2'><span class="text-white font-bold">> FINALIZADO!</span>`;
-        alert("Processamento concluído!");
-    }
 
-        // 3. ZOOM E MODAL
         function abrirZoom(aluno) {
             document.getElementById('zoomFoto').src = aluno.foto_url || 'https://via.placeholder.com/150';
             document.getElementById('zoomNome').innerText = aluno.nome_completo;
             document.getElementById('zoomTurma').innerText = aluno.turma;
-            
             let bHtml = '';
             if(aluno.status === 'Evadido') bHtml += '<span class="bg-black text-white px-3 py-1 rounded text-[10px] font-black uppercase">EVADIDO</span>';
             if(aluno.representante) bHtml += '<span class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-black uppercase">REPRESENTANTE</span>';
@@ -328,89 +202,26 @@ async function filtrarAlunos() {
             if(aluno.aapm) bHtml += '<span class="bg-green-600 text-white px-3 py-1 rounded text-[10px] font-black uppercase">AAPM</span>';
             if(aluno.npaadc) bHtml += '<span class="bg-orange-600 text-white px-3 py-1 rounded text-[10px] font-black uppercase">NPAADC</span>';
             if(aluno.spskills) bHtml += '<span class="bg-yellow-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase">SP SKILLS</span>';
-            
             document.getElementById('zoomBadges').innerHTML = bHtml;
             document.getElementById('modalZoom').classList.remove('hidden');
         }
 
         function fecharZoom() { document.getElementById('modalZoom').classList.add('hidden'); }
 
-        // 4. PDF
         async function gerarPDF() {
             const btn = event.currentTarget;
-            const originalContent = btn.innerHTML;
+            const original = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-
-            const gridOriginal = document.getElementById('alunoGrid');
-            const turmaNome = document.getElementById('selectTurma').value || "Geral";
-            
-            const printArea = document.createElement('div');
-            printArea.style.padding = "10px";
-            printArea.style.width = "190mm";
-
-            let html = `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #E30613; padding-bottom: 10px; margin-bottom: 20px; font-family: Arial;">
-                    <span style="color: #E30613; font-size: 24px; font-weight: 900;">SENAI - CARÔMETRO</span>
-                    <div style="text-align: right; font-size: 10px; font-weight: bold; color: #444;">
-                        TURMA: ${turmaNome.toUpperCase()}<br>
-                        GERADO EM: ${new Date().toLocaleDateString()}
-                    </div>
-                </div>
-                <table style="width: 100%; border-collapse: separate; border-spacing: 5px;">
-            `;
-
-            const cards = Array.from(gridOriginal.querySelectorAll('.aluno-card'));
-            for (let i = 0; i < cards.length; i += 4) {
-                html += `<tr>`;
-                for (let j = 0; j < 4; j++) {
-                    const card = cards[i + j];
-                    if (card) {
-                        const nome = card.querySelector('h3').innerText;
-                        const foto = card.querySelector('img').src;
-                        const badges = card.querySelector('.flex').innerHTML;
-                        const evadido = card.innerHTML.includes('EVADIDO');
-
-                        html += `
-                            <td style="width: 25%; vertical-align: top;">
-                                <div style="border: 1px solid #ddd; border-radius: 10px; padding: 10px; text-align: center; background: white; position: relative; min-height: 130px;">
-                                    <img src="${foto}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid ${evadido ? '#ccc' : '#E30613'};">
-                                    <div style="font-size: 8px; font-weight: 900; margin: 8px 0; text-transform: uppercase;">${nome}</div>
-                                    <div style="display: flex; gap: 2px; justify-content: center;">${badges}</div>
-                                    ${evadido ? '<div style="position: absolute; top: 25px; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 2px 0; transform: rotate(-15deg);">EVADIDO</div>' : ''}
-                                </div>
-                            </td>`;
-                    } else { html += `<td style="width: 25%;"></td>`; }
-                }
-                html += `</tr>`;
-            }
-            html += `</table>`;
-            
-            printArea.innerHTML = html;
-
-            const opt = {
-                margin: 10,
-                filename: `Carometro_${turmaNome}.pdf`,
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            try {
-                await html2pdf().set(opt).from(printArea).save();
-            } finally {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-            }
+            const grid = document.getElementById('alunoGrid');
+            const opt = { margin: 10, filename: 'carometro.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }};
+            try { await html2pdf().set(opt).from(grid).save(); } 
+            finally { btn.innerHTML = original; }
         }
 
-        // INICIALIZAÇÃO CORRETA
         window.onload = async () => {
-            await carregarTurmas(); // Primeiro popula o select
-            await filtrarAlunos();  // Depois busca os alunos iniciais
+            await carregarTurmas();
+            await filtrarAlunos();
         };
     </script>
 </body>
 </html>
-
-
-
