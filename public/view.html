@@ -154,59 +154,79 @@
         }
 
         // 2. FUNÇÃO PRINCIPAL DE FILTRO E CARGA
-       <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Turma - SENAI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="icon" type="image/png" href="imagem/favicon.png">
-</head>
-<body class="bg-gray-100 min-h-screen">
+       
+async function filtrarAlunos() {
+    const grid = document.getElementById('alunoGrid');
+    const busca = document.getElementById('inputBusca').value.toLowerCase();
+    const turmaSelecionada = document.getElementById('selectTurma').value;
+    
+    // Inicia a query básica
+    let query = _supabase.from('alunos').select('*');
 
-    <div class="container mx-auto p-4 max-w-4xl">
-        <div class="flex items-center gap-4 mb-8">
-            <a href="dashboard.html" class="bg-white p-2 rounded shadow hover:bg-gray-50 transition">⬅ Voltar</a>
-            <h1 class="text-2xl font-black text-red-600 uppercase">Nova Turma</h1>
-        </div>
+    // 1. Filtro de Turma
+    if (turmaSelecionada) {
+        query = query.eq('turma', turmaSelecionada);
+    }
+    
+    // 2. Filtro PCD (Correção Crítica)
+    // Em vez de apenas "não nulo", filtramos quem tem texto preenchido e diferente de vazio
+    if (document.getElementById('fPCD').checked) {
+        query = query.neq('pcd_tipo', '').not('pcd_tipo', 'is', null);
+    }
 
-        <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
-            <div>
-                <label class="block font-bold text-gray-700">1. NOME DA TURMA</label>
-                <input type="text" id="turmaNome" class="w-full p-3 border rounded mt-1 outline-red-600" placeholder="Ex: 1 DS 2 SESI">
-            </div>
+    // 3. Outros Filtros de Badges
+    if (document.getElementById('fREP').checked) query = query.eq('representante', true);
+    if (document.getElementById('fAAPM').checked) query = query.eq('aapm', true);
+    if (document.getElementById('fNPAADC').checked) query = query.eq('npaadc', true);
+    if (document.getElementById('fSKILLS').checked) query = query.eq('spskills', true);
 
-            <div class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block font-bold text-gray-700">2. LISTA DE ALUNOS</label>
-                    <p class="text-[10px] text-gray-400 mb-2">Cole os nomes completos, um por linha.</p>
-                    <textarea id="listaNomes" class="w-full h-64 p-3 border rounded text-sm font-mono focus:ring-2 ring-red-100 outline-none" placeholder="ANA SILVA&#10;BRUNO OLIVEIRA&#10;CARLOS SOUZA"></textarea>
-                </div>
+    try {
+        const { data: alunos, error } = await query.order('nome_completo');
+        if (error) throw error;
 
-                <div>
-                    <label class="block font-bold text-gray-700">3. PASTA DE FOTOS</label>
-                    <p class="text-[10px] text-gray-400 mb-2">As fotos devem ter o nome do aluno (Ex: ANA SILVA.jpg)</p>
-                    <div id="dropzone" onclick="document.getElementById('inputFotos').click()" class="border-4 border-dashed border-gray-200 h-64 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition">
-                        <span class="text-4xl">📁</span>
-                        <p class="text-sm font-bold text-gray-500 mt-2">Clique para selecionar as fotos</p>
-                        <p id="contagemFotos" class="text-xs text-red-600 mt-1 font-bold"></p>
-                        <input type="file" id="inputFotos" multiple accept="image/*" class="hidden" onchange="atualizarContagem()">
+        // 4. Filtro de Nome (Client-side para busca dinâmica)
+        const filtrados = alunos.filter(a => 
+            a.nome_completo && a.nome_completo.toLowerCase().includes(busca)
+        );
+        
+        // 5. Renderização
+        if (filtrados.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-20 text-gray-400">
+                    <p class="font-bold uppercase text-xs tracking-widest">Nenhum resultado para estes filtros</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = filtrados.map(aluno => {
+            const isEvadido = aluno.status === 'Evadido';
+            const alunoJSON = JSON.stringify(aluno).replace(/'/g, "&apos;");
+            
+            // Verificação visual da badge PCD
+            const temPCD = aluno.pcd_tipo && aluno.pcd_tipo.trim() !== "";
+
+            return `
+                <div class="aluno-card" onclick='abrirZoom(${alunoJSON})'>
+                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
+                         class="foto-redonda ${isEvadido ? 'grayscale opacity-40' : ''}">
+                    <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight h-6 overflow-hidden">${aluno.nome_completo}</h3>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">${aluno.turma}</p>
+                    <div class="flex gap-1 mt-3">
+                        ${aluno.representante ? '<div class="badge-icon bg-blue-600" title="Representante">R</div>' : ''}
+                        ${temPCD ? '<div class="badge-icon bg-purple-600" title="PCD: ${aluno.pcd_tipo}">P</div>' : ''}
+                        ${aluno.aapm ? '<div class="badge-icon bg-green-600" title="AAPM">A</div>' : ''}
+                        ${aluno.npaadc ? '<div class="badge-icon bg-orange-600" title="NPAADC">N</div>' : ''}
+                        ${aluno.spskills ? '<div class="badge-icon bg-yellow-500" title="SP Skills">S</div>' : ''}
                     </div>
-                </div>
-            </div>
+                    ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
+                </div>`;
+        }).join('');
 
-            <button onclick="cruzarDados()" class="w-full bg-red-600 text-white py-4 rounded-xl font-black text-lg shadow-xl hover:bg-red-700 transition transform active:scale-95">
-                🚀 FINALIZAR E CRUZAR DADOS
-            </button>
-        </div>
-
-        <div id="log" class="mt-6 hidden bg-black text-green-400 p-4 rounded-lg font-mono text-xs overflow-y-auto max-h-60 border-2 border-gray-800">
-        </div>
-    </div>
-
-<script>
+    } catch (err) {
+        console.error("Erro na busca:", err.message);
+        grid.innerHTML = `<div class="col-span-full text-center text-red-500 font-bold">Erro ao carregar dados.</div>`;
+    }
+}
     // Configurações de Conexão
     const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ'; // <-- SUBSTITUA PELA SUA KEY ANON (A COMPRIDA)
@@ -391,6 +411,7 @@
     </script>
 </body>
 </html>
+
 
 
 
