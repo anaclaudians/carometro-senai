@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SENAI - Dashboard</title>
+    <title>SENAI - Visualização de Alunos</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,14 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root {
-            --senai-red: #E30613;
-            --senai-dark: #1a1a1a;
-        }
-
+        :root { --senai-red: #E30613; }
         body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
 
-        /* Estilo dos Cards */
+        /* Estilo dos Cards Refinado */
         .aluno-card {
             background: white; border-radius: 20px; padding: 1.5rem 1rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -38,7 +34,6 @@
             box-shadow: 0 0 0 2px var(--senai-red); background-color: #f1f5f9;
         }
 
-        /* Selo de Evadido */
         .status-overlay {
             position: absolute; inset: 0; background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(2px); display: flex; align-items: center;
@@ -49,113 +44,76 @@
             padding: 6px 12px; border-radius: 4px; transform: rotate(-12deg);
         }
 
-        /* Badges */
         .badge-icon { 
-            display: inline-flex; width: 20px; height: 20px; 
-            font-size: 10px; font-weight: bold; color: white; 
-            border-radius: 5px; justify-content: center; align-items: center; 
+            display: inline-flex; width: 22px; height: 22px; 
+            font-size: 11px; font-weight: bold; color: white; 
+            border-radius: 6px; justify-content: center; align-items: center; 
         }
 
-        /* Forçar cores que o Tailwind pode ignorar no JS */
+        /* Cores Fixas */
         .bg-blue-600 { background-color: #2563eb !important; }
         .bg-purple-600 { background-color: #9333ea !important; }
         .bg-green-600 { background-color: #16a34a !important; }
         .bg-orange-600 { background-color: #ea580c !important; }
         .bg-yellow-500 { background-color: #eab308 !important; }
-        // ... dentro do mapeamento dos cards ...
-    return `
-        <td style="width: 25%; padding: 4px; vertical-align: top;">
-            <div style="border: 1px solid #ccc; border-radius: 6px; padding: 8px 4px; text-align: center; height: 135px; position: relative; background: white; display: flex; flex-direction: column; align-items: center;">
-                
-                <img src="${foto}" style="width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isEvadido ? '#ddd' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.4;' : ''}">
-                
-                <div style="
-                    font-size: 8.5px; 
-                    font-weight: 800; 
-                    margin: 8px 0; 
-                    text-transform: uppercase; 
-                    color: ${isEvadido ? '#999' : '#000'}; 
-                    line-height: 1.2; 
-                    height: 2.4em; 
-                    display: flex; 
-                    align-items: center;    /* Centraliza verticalmente */
-                    justify-content: center; /* Centraliza horizontalmente */
-                    text-align: center; 
-                    width: 100%; 
-                    overflow: hidden;
-                ">
-                    ${nome}
-                </div>
-
-                <div style="display: flex; gap: 2px; justify-content: center; margin-top: auto; padding-bottom: 2px;">
-                    ${badges}
-                </div>
-
-                ${isEvadido ? `
-                    <div style="position: absolute; top: 35px; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 2px 0; transform: rotate(-10deg); text-align: center; z-index: 10;">EVADIDO</div>
-                ` : ''}
-            </div>
-        </td>
-    `;
     </style>
 </head>
 <body class="pb-10">
 
     <header class="bg-[#E30613] text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-black tracking-tighter">SENAI</h1>
+            <span class="hidden md:inline border-l border-white/30 pl-4 text-xs font-bold opacity-80 uppercase tracking-widest">Carômetro Digital</span>
+        </div>
         
-        
-        <div class="flex gap-3">
-                       <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-gray-100 flex items-center gap-2">
-                <i class="fa fa-file-pdf"></i> GERAR PDF
+        <div class="flex gap-2">
+            <button onclick="gerarPDF()" class="bg-white text-red-600 px-4 py-2 rounded-lg text-[10px] font-black shadow-md hover:bg-gray-100 flex items-center gap-2 transition">
+                <i class="fa fa-file-pdf"></i> PDF
+            </button>
+            <button onclick="fazerLogout()" class="bg-black/20 hover:bg-black/40 text-white px-4 py-2 rounded-lg text-[10px] font-black border border-white/20 flex items-center gap-2 transition">
+                <i class="fa fa-sign-out-alt"></i> SAIR
             </button>
         </div>
-        <div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
-    <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl transform transition-all" onclick="event.stopPropagation()">
-        <div class="relative">
-            <img id="zoomFoto" src="" class="w-full h-80 object-cover">
-            <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold">&times;</button>
-        </div>
-        <div class="p-8 text-center">
-            <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase mb-2"></h2>
-            <p id="zoomTurma" class="text-sm font-bold text-red-600 uppercase mb-6"></p>
-            <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
-        </div>
-    </div>
-</div>
     </header>
 
     <section class="bg-white p-4 shadow-sm border-b sticky top-[64px] z-40">
         <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-                <label class="text-[10px] font-bold text-gray-400 uppercase">Pesquisar</label>
-                <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full p-2 border rounded-lg text-sm outline-red-500">
+                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pesquisar</label>
+                <div class="relative flex items-center">
+                    <i class="fa fa-search absolute left-3 text-gray-300 text-xs"></i>
+                    <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Nome do aluno..." class="w-full pl-9 p-2 border border-gray-100 bg-gray-50 rounded-lg text-sm outline-red-500">
+                </div>
             </div>
             <div>
-                <label class="text-[10px] font-bold text-gray-400 uppercase">Filtrar Turma</label>
-                <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2 border rounded-lg text-sm outline-red-500">
+                <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Turma</label>
+                <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2 border border-gray-100 bg-gray-50 rounded-lg text-sm outline-red-500">
                     <option value="">Todas as Turmas Ativas</option>
                 </select>
             </div>
-            <div class="md:col-span-2 flex gap-2 overflow-x-auto">
-                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-purple-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">PCD</span></label>
-                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-3 py-1 bg-gray-200 peer-checked:bg-blue-600 peer-checked:text-white rounded-full text-[10px] font-bold uppercase transition">REP</span></label>
-                 </div>
+            <div class="md:col-span-2 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fPCD" onchange="filtrarAlunos()" class="hidden peer"><span class="px-4 py-2 bg-gray-100 peer-checked:bg-purple-600 peer-checked:text-white rounded-xl text-[10px] font-bold uppercase transition">PCD</span></label>
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fREP" onchange="filtrarAlunos()" class="hidden peer"><span class="px-4 py-2 bg-gray-100 peer-checked:bg-blue-600 peer-checked:text-white rounded-xl text-[10px] font-bold uppercase transition">REP</span></label>
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fAAPM" onchange="filtrarAlunos()" class="hidden peer"><span class="px-4 py-2 bg-gray-100 peer-checked:bg-green-600 peer-checked:text-white rounded-xl text-[10px] font-bold uppercase transition">AAPM</span></label>
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fNPAADC" onchange="filtrarAlunos()" class="hidden peer"><span class="px-4 py-2 bg-gray-100 peer-checked:bg-orange-600 peer-checked:text-white rounded-xl text-[10px] font-bold uppercase transition">NPAADC</span></label>
+                 <label class="flex-shrink-0 cursor-pointer"><input type="checkbox" id="fSKILLS" onchange="filtrarAlunos()" class="hidden peer"><span class="px-4 py-2 bg-gray-100 peer-checked:bg-yellow-500 peer-checked:text-white rounded-xl text-[10px] font-bold uppercase transition">SKILLS</span></label>
+            </div>
         </div>
     </section>
 
     <main id="alunoGrid" class="container mx-auto p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"></main>
 
-    <div id="modalSenha" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
-            <h3 class="text-xl font-black text-gray-800 text-center mb-2">ALTERAR SENHA</h3>
-            <form id="updatePasswordForm" class="space-y-4 mt-4">
-                <input type="password" id="newPassword" required placeholder="Nova senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
-                <input type="password" id="confirmPassword" required placeholder="Confirme a senha" class="w-full px-4 py-3 border rounded-xl outline-red-500">
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="fecharModalSenha()" class="flex-1 py-3 text-xs font-bold text-gray-400 uppercase">Cancelar</button>
-                    <button type="submit" class="flex-1 bg-red-600 text-white py-3 rounded-xl text-xs font-bold uppercase shadow-lg">Salvar</button>
-                </div>
-            </form>
+    <div id="modalZoom" class="hidden fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-md" onclick="fecharZoom()">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+            <div class="relative">
+                <img id="zoomFoto" src="" class="w-full h-80 object-cover">
+                <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold transition hover:bg-red-600">&times;</button>
+            </div>
+            <div class="p-8 text-center">
+                <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase mb-1 leading-tight"></h2>
+                <p id="zoomTurma" class="text-xs font-bold text-red-600 uppercase mb-6"></p>
+                <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
+            </div>
         </div>
     </div>
 
@@ -164,8 +122,10 @@
         const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
-        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+        function fazerLogout() {
+            localStorage.clear();
+            window.location.href = "index.html"; // Altere para o seu arquivo de login
+        }
 
         async function carregarTurmas() {
             const { data, error } = await _supabase.from('alunos').select('turma');
@@ -178,189 +138,18 @@
                 select.appendChild(opt);
             });
         }
-// FUNÇÃO PARA RENDERIZAR OS CARDS (Com clique para Zoom)
-function renderizarCards(alunos) {
-    const grid = document.getElementById('alunoGrid');
-    grid.innerHTML = alunos.map(aluno => {
-        const isEvadido = aluno.status === 'Evadido';
-        // Transformamos o objeto aluno em string para passar no clique
-        const alunoString = JSON.stringify(aluno).replace(/'/g, "&apos;");
-        
-        return `
-            <div class="aluno-card" onclick='abrirZoom(${alunoString})'>
-                <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
-                     class="foto-redonda ${isEvadido ? 'grayscale opacity-50' : ''}">
-                <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight">${aluno.nome_completo}</h3>
-                <p class="text-[9px] font-bold text-gray-400">${aluno.turma}</p>
-                <div class="badge-group mt-2">
-                    ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
-                    ${aluno.pcd_tipo ? '<div class="badge-icon bg-purple-600">P</div>' : ''}
-                    ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
-                    ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
-                    ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
-                </div>
-                ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
-            </div>`;
-    }).join('');
-}
 
-// FUNÇÕES DE ZOOM
-function abrirZoom(aluno) {
-    document.getElementById('zoomFoto').src = aluno.foto_url || 'https://via.placeholder.com/150';
-    document.getElementById('zoomNome').innerText = aluno.nome_completo;
-    document.getElementById('zoomTurma').innerText = aluno.turma;
-    
-    let bHtml = '';
-    if(aluno.status === 'Evadido') bHtml += '<span class="bg-black text-white px-3 py-1 rounded text-[10px] font-bold">EVADIDO</span>';
-    if(aluno.representante) bHtml += '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-bold">REPRESENTANTE</span>';
-    if(aluno.pcd_tipo) bHtml += `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded text-[10px] font-bold">PCD: ${aluno.pcd_tipo}</span>`;
-    if(aluno.aapm) bHtml += '<span class="bg-green-100 text-green-700 px-3 py-1 rounded text-[10px] font-bold">AAPM</span>';
-    if(aluno.npaadc) bHtml += '<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded text-[10px] font-bold">NPAADC</span>';
-    if(aluno.spskills) bHtml += '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-[10px] font-bold">SP SKILLS</span>';
-    
-    document.getElementById('zoomBadges').innerHTML = bHtml;
-    document.getElementById('modalZoom').classList.remove('hidden');
-}
-
-function fecharZoom() { 
-    document.getElementById('modalZoom').classList.add('hidden'); 
-}
-
-// FILTRAR ALUNOS (Corrigido com todos os campos)
-async function filtrarAlunos() {
-    const busca = document.getElementById('inputBusca').value.toLowerCase();
-    const turma = document.getElementById('selectTurma').value;
-    
-    let query = _supabase.from('alunos').select('*');
-
-    if (turma) query = query.eq('turma', turma);
-    
-    // Filtros de Checkbox
-    if (document.getElementById('fPCD')?.checked) query = query.not('pcd_tipo', 'is', null);
-    if (document.getElementById('fREP')?.checked) query = query.eq('representante', true);
-    if (document.getElementById('fAAPM')?.checked) query = query.eq('aapm', true);
-    if (document.getElementById('fNPAADC')?.checked) query = query.eq('npaadc', true);
-    if (document.getElementById('fSKILLS')?.checked) query = query.eq('spskills', true);
-
-    const { data: alunos, error } = await query.order('nome_completo');
-    if (error) { console.error(error); return; }
-
-    const filtrados = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca));
-    renderizarCards(filtrados);
-}
-        async function filtrarAlunos() {
-            const busca = document.getElementById('inputBusca').value.toLowerCase();
-            const turma = document.getElementById('selectTurma').value;
-            let query = _supabase.from('alunos').select('*');
-            if (turma) query = query.eq('turma', turma);
-            
-            const { data: alunos, error } = await query.order('nome_completo');
-            if (error) return;
-
+        function renderizarCards(alunos) {
             const grid = document.getElementById('alunoGrid');
-            grid.innerHTML = alunos.filter(a => a.nome_completo.toLowerCase().includes(busca)).map(aluno => `
-                <div class="aluno-card">
-                    <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" class="foto-redonda ${aluno.status === 'Evadido' ? 'grayscale opacity-50' : ''}">
-                    <h3 class="text-[10px] font-black mt-3 text-center uppercase">${aluno.nome_completo}</h3>
-                    <p class="text-[8px] font-bold text-gray-400">${aluno.turma}</p>
-                    ${aluno.status === 'Evadido' ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
-                </div>
-            `).join('');
-        }
-
-        window.onload = () => { carregarTurmas(); filtrarAlunos(); };
-       async function gerarPDF() {
-    const gridOriginal = document.getElementById('alunoGrid');
-    const botao = event.currentTarget;
-    const turma = document.getElementById('selectTurma').value || "GERAL";
-    
-    botao.innerText = "TRAVANDO LAYOUT...";
-    botao.disabled = true;
-
-    const printArea = document.createElement('div');
-    // Forçamos a largura do container para caber exatamente no A4 (210mm - margens)
-    printArea.style.width = "190mm"; 
-    printArea.style.fontFamily = "Arial, sans-serif";
-
-    let html = `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E30613; padding-bottom: 5px; margin-bottom: 15px;">
-            <div style="color: #E30613; font-size: 22px; font-weight: bold;">SENAI</div>
-            <div style="text-align: right; font-size: 11px;">
-                <b>TURMA: ${turma}</b><br>
-                <span>${new Date().toLocaleDateString()}</span>
-            </div>
-        </div>
-        <table style="width: 100%; table-layout: fixed; border-spacing: 2mm; border-collapse: separate;">
-    `;
-
-    const cards = Array.from(gridOriginal.querySelectorAll('.aluno-card'));
-    
-    for (let i = 0; i < cards.length; i += 4) {
-        html += `<tr>`;
-        for (let j = 0; j < 4; j++) {
-            const card = cards[i + j];
-            if (card) {
-                const nome = card.querySelector('.aluno-nome').innerText;
-                const foto = card.querySelector('.foto-redonda').src;
-                const badges = card.querySelector('.badge-group').innerHTML;
-                const isEvadido = card.innerHTML.includes('EVADIDO');
-
-                // Cada célula tem exatamente 25% de 190mm e altura fixa
-                html += `
-                    <td style="width: 25%; vertical-align: top;">
-                        <div style="border: 0.5pt solid #bbb; border-radius: 5px; padding: 5px 2px; text-align: center; height: 125px; background: white; position: relative; overflow: hidden;">
-                            
-                            <img src="${foto}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${isEvadido ? '#ccc' : '#E30613'}; ${isEvadido ? 'filter: grayscale(1); opacity: 0.4;' : ''}">
-                            
-                            <div style="height: 35px; display: flex; align-items: center; justify-content: center; margin: 4px 0;">
-                                <span style="font-size: 8px; font-weight: bold; line-height: 1.1; text-transform: uppercase; color: ${isEvadido ? '#888' : '#000'}; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; padding: 0 2px;">
-                                    ${nome}
-                                </span>
-                            </div>
-
-                            <div style="display: flex; gap: 2px; justify-content: center; height: 18px; align-items: center;">
-                                ${badges}
-                            </div>
-
-                            ${isEvadido ? `
-                                <div style="position: absolute; top: 25px; left: -10px; width: 120%; background: rgba(0,0,0,0.8); color: white; font-size: 7px; font-weight: 900; padding: 1px 0; transform: rotate(-15deg); text-align: center; z-index: 5;">EVADIDO</div>
-                            ` : ''}
-                        </div>
-                    </td>
-                `;
-            } else {
-                html += `<td style="width: 25%;"></td>`;
+            if (alunos.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-20"><i class="fa fa-user-slash text-gray-200 text-5xl mb-4"></i><p class="text-gray-400 font-bold uppercase text-xs tracking-widest">Nenhum aluno nesta categoria</p></div>';
+                return;
             }
-        }
-        html += `</tr>`;
-    }
 
-    html += `</table>`;
-    printArea.innerHTML = html;
-
-    const opt = {
-        margin: [10, 5, 10, 5], // Margens: Topo, Esquerda, Fundo, Direita
-        filename: `Carometro_${turma}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    try {
-        await html2pdf().set(opt).from(printArea).save();
-    } catch (e) {
-        console.error(e);
-    } finally {
-        botao.innerHTML = '<i class="fa fa-file-pdf"></i> GERAR PDF';
-        botao.disabled = false;
-    }
-}
-    </script>
-</body>
-</html>
-
-
-
-
-
+            grid.innerHTML = alunos.map(aluno => {
+                const isEvadido = aluno.status === 'Evadido';
+                const alunoString = JSON.stringify(aluno).replace(/'/g, "&apos;");
+                
+                return `
+                    <div class="aluno-card" onclick='abrirZoom(${alunoString})'>
+                        <img src="${aluno.foto
