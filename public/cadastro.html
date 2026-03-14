@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastrar Turma - SENAI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/png" href="imagem/favicon.png">
     <style>
@@ -39,39 +38,49 @@
 
                 <div class="space-y-8">
                     <div class="relative">
-                        <label class="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block">1. Identificação da Turma</label>
+                        <label class="text-[10px] font-black text-[#E30613] uppercase tracking-[0.2em] mb-2 block">1. Identificação da Turma</label>
                         <input type="text" id="turmaNome" 
-                            class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-red-600 focus:bg-white transition-all text-lg font-bold text-gray-700" 
+                            class="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-xl outline-none focus:border-[#E30613] focus:bg-white transition-all text-lg font-bold text-gray-700" 
                             placeholder="Ex: 1 DS 2 SESI">
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-8">
                         <div class="flex flex-col">
-                            <label class="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block">2. Lista de Chamada</label>
+                            <label class="text-[10px] font-black text-[#E30613] uppercase tracking-[0.2em] mb-2 block">2. Lista de Chamada</label>
                             <p class="text-xs text-gray-400 mb-3 italic">Cole os nomes completos (um por linha).</p>
                             <textarea id="listaNomes" 
-                                class="w-full flex-grow min-h-[300px] p-4 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm font-mono focus:border-red-600 focus:bg-white transition-all resize-none outline-none" 
+                                class="w-full flex-grow min-h-[300px] p-4 bg-gray-50 border-2 border-gray-100 rounded-xl text-sm font-mono focus:border-[#E30613] focus:bg-white transition-all resize-none outline-none" 
                                 placeholder="ANA SILVA&#10;BRUNO OLIVEIRA&#10;CARLOS SOUZA"></textarea>
                         </div>
 
                         <div class="flex flex-col">
-                            <label class="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] mb-2 block">3. Banco de Imagens</label>
+                            <label class="text-[10px] font-black text-[#E30613] uppercase tracking-[0.2em] mb-2 block">3. Banco de Imagens</label>
                             <p class="text-xs text-gray-400 mb-3 italic">Arquivos devem ter o nome do aluno (Ex: JOÃO SILVA.jpg)</p>
                             <div id="dropzone" onclick="document.getElementById('inputFotos').click()" 
-                                class="flex-grow border-4 border-dashed border-gray-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-red-200 hover:bg-red-50/30 transition-all group min-h-[300px]">
+                                class="flex-grow border-4 border-dashed border-gray-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#E30613] hover:bg-red-50/30 transition-all group min-h-[300px]">
                                 
-                                <div class="bg-gray-100 group-hover:bg-red-600 group-hover:text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl text-gray-400 transition-all mb-4">
+                                <div class="bg-gray-100 group-hover:bg-[#E30613] group-hover:text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl text-gray-400 transition-all mb-4">
                                     <i class="fa fa-cloud-arrow-up"></i>
                                 </div>
-                                <p class="text-sm font-black text-gray-600 group-hover:text-red-600 transition-colors uppercase">Selecionar Fotos</p>
-                                <p id="contagemFotos" class="text-xs text-red-600 mt-2 font-bold px-4 py-1 bg-red-50 rounded-full hidden"></p>
+                                <p class="text-sm font-black text-gray-600 group-hover:text-[#E30613] transition-colors uppercase">Selecionar Fotos</p>
+                                <p id="contagemFotos" class="text-xs text-[#E30613] mt-2 font-bold px-4 py-1 bg-red-50 rounded-full hidden"></p>
                                 <input type="file" id="inputFotos" multiple accept="image/*" class="hidden" onchange="atualizarContagem()">
                             </div>
                         </div>
                     </div>
 
-                    <button onclick="cruzarDados()" 
-                        class="w-full bg-red-600 hover:bg-red-700 text-white py-5 rounded-2xl font-black text-xl shadow-lg shadow-red-200 transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3">
+                    <div id="progressContainer" class="hidden space-y-2">
+                        <div class="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            <span id="progressLabel">Enviando dados...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden border border-gray-200">
+                            <div id="progressBar" class="bg-[#E30613] h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <button onclick="cruzarDados()" id="btnFinalizar"
+                        class="w-full bg-[#E30613] hover:bg-[#b0050f] text-white py-5 rounded-2xl font-black text-xl shadow-lg shadow-[#E30613]/40 transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3">
                         <i class="fa fa-rocket"></i> FINALIZAR E CRUZAR DADOS
                     </button>
                 </div>
@@ -92,11 +101,13 @@
         </div>
     </div>
 
-<script>
-    // MANTIDA TODA A SUA LÓGICA ORIGINAL ABAIXO
-    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ'; 
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
+    import { _supabase } from './supabase-config.js';
+    import { authGuard } from './auth-guard.js';
+
+    // Globals para HTML Form
+    window.atualizarContagem = atualizarContagem;
+    window.cruzarDados = cruzarDados;
 
     function normalizarTexto(texto) {
         return texto.toString().toLowerCase().trim()
@@ -116,6 +127,11 @@
     }
 
     async function cruzarDados() {
+        if (!authGuard.isAdmin()) {
+            alert("Acesso Negado: Apenas administradores podem cadastrar turmas.");
+            return;
+        }
+
         const turma = document.getElementById('turmaNome').value.trim();
         const nomesRaw = document.getElementById('listaNomes').value.split('\n').filter(n => n.trim() !== "");
         const fotos = document.getElementById('inputFotos').files;
@@ -128,9 +144,23 @@
         }
 
         logContainer.classList.remove('hidden');
+        document.getElementById('progressContainer').classList.remove('hidden');
+        const btn = document.getElementById('btnFinalizar');
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+
         log.innerHTML = `<span class="text-white">[${new Date().toLocaleTimeString()}] 🚀 Iniciando processamento de ${nomesRaw.length} alunos...</span><br><div class='my-2 border-b border-slate-800'></div>`;
 
+        const totalPassos = nomesRaw.length;
+        let passoAtual = 0;
+
         for (let nomeOriginal of nomesRaw) {
+            passoAtual++;
+            const percentualGeral = Math.round((passoAtual / totalPassos) * 100);
+            document.getElementById('progressBar').style.width = `${percentualGeral}%`;
+            document.getElementById('progressPercent').innerText = `${percentualGeral}%`;
+            document.getElementById('progressLabel').innerText = `Processando: ${nomeOriginal.trim().split(' ')[0]}...`;
+
             const nomeLimpo = nomeOriginal.trim();
             const nomeNormalizado = normalizarTexto(nomeLimpo); 
             
@@ -145,6 +175,7 @@
                 const extensao = fotoMatch.name.split('.').pop();
                 const fileName = `${normalizarTexto(turma)}/${nomeNormalizado}_${Date.now()}.${extensao}`;
 
+                // Upload com monitoramento de progresso (opcional no storage para arquivos pequenos, mas o loop em si já gera progresso)
                 const { data: uploadData, error: uploadError } = await _supabase.storage
                     .from('fotos-alunos')
                     .upload(fileName, fotoMatch);
@@ -176,9 +207,17 @@
             log.scrollTop = log.scrollHeight;
         }
         
+        document.getElementById('progressLabel').innerText = `🏁 Finalizado!`;
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
         log.innerHTML += `<div class='my-2 border-b border-slate-800'></div><span class="text-white font-bold">🏁 PROCESSO CONCLUÍDO!</span>`;
         alert("🎉 Turma cadastrada com sucesso!");
     }
+
+    window.onload = async () => {
+        await authGuard.init();
+        if(!authGuard.isAdmin()) return; // Vai redirecionar out
+    };
 </script>
 </body>
 </html>

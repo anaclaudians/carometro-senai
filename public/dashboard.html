@@ -6,7 +6,6 @@
     <title>Carômetro SENAI - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
      <link rel="icon" type="image/png" href="imagem/favicon.png">
     <style>
         /* Variáveis de Cores SENAI */
@@ -70,6 +69,7 @@
         /* SOLUÇÃO PARA O ERRO: */
         display: -webkit-box;       /* Define um container flexbox especial */
         -webkit-line-clamp: 2;      /* Número de linhas desejado */
+        line-clamp: 2;              /* Propriedade Padrão */
         -webkit-box-orient: vertical; /* Direção do corte */
         overflow: hidden;           /* Esconde o que sobrar */
         text-overflow: ellipsis;    /* Adiciona os "..." no final */
@@ -131,20 +131,34 @@
         right: 10px;
         background: white;
         color: var(--senai-red);
-        width: 26px;
-        height: 26px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         opacity: 0;
         transition: all 0.2s;
         z-index: 10;
+        border: 1px solid rgba(0,0,0,0.05);
     }
 
+    /* Mostrar botão no hover (Desktop) ou sempre em telas pequenas (Touch) */
     .aluno-card:hover .btn-edit-float {
         opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+        .btn-edit-float {
+            opacity: 1;
+            width: 32px;
+            height: 32px;
+        }
+        #alunoGrid {
+            gap: 1rem;
+            padding: 0.5rem;
+        }
     }
     </style>
 </head>
@@ -156,9 +170,9 @@
         <h1 class="hidden md:block text-sm font-light border-l pl-4 border-white/30">Carômetro Digital</h1>
     </div>
     <div class="flex gap-2">
-        <button onclick="abrirModalAvulso()" class="bg-white text-red-600 px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-gray-100">+ ALUNO</button>
-        <a href="cadastro.html" class="bg-black/20 text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/30">CADASTRAR TURMA</a>
-        <button onclick="logout()" class="p-2 hover:text-gray-200"><i class="fa fa-sign-out-alt"></i></button>
+        <button onclick="abrirModalAvulso()" aria-label="Adicionar novo aluno" class="bg-white text-[#E30613] px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-gray-100">+ ALUNO</button>
+        <a href="cadastro.html" aria-label="Cadastrar nova turma" class="bg-black/20 text-white px-3 py-1.5 rounded-full text-xs font-bold border border-white/30 hidden sm:block">CADASTRAR TURMA</a>
+        <button onclick="logout()" aria-label="Sair" class="p-2 hover:text-gray-200"><i class="fa fa-sign-out-alt"></i></button>
     </div>
 </header>
 
@@ -176,7 +190,7 @@
                     <option value="">Todas as Turmas Ativas</option>
                     <option value="ARQUIVADAS">📦 Alunos Formados (Arquivados)</option>
                 </select>
-                <button onclick="abrirGestaoTurmas()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 border" title="Gerenciar Turmas">
+                <button onclick="abrirGestaoTurmas()" aria-label="Gerenciar Turmas" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 border" title="Gerenciar Turmas">
                     <i class="fa fa-cog text-gray-600"></i>
                 </button>
             </div>
@@ -217,7 +231,7 @@
             <input type="hidden" id="editId">
             <div class="flex flex-col items-center gap-2">
                 <img id="editFotoPrevia" src="" class="foto-redonda shadow-lg">
-                <label class="text-[10px] bg-red-600 text-white px-4 py-1.5 rounded-full cursor-pointer hover:bg-red-700 font-bold uppercase">
+                <label class="text-[10px] bg-[#E30613] text-white px-4 py-1.5 rounded-full cursor-pointer hover:bg-[#b0050f] font-bold uppercase">
                     <i class="fa fa-camera mr-1"></i> Alterar Foto
                     <input type="file" id="inputFotoManual" class="hidden" accept="image/*" onchange="previewFoto(this)">
                 </label>
@@ -256,17 +270,33 @@
                 </div>
             </div>
             <div class="flex gap-2 pt-4">
-                <button type="button" onclick="salvarAluno()" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-red-700 transition uppercase">Salvar Alterações</button>
-                <button type="button" id="btnExcluir" onclick="excluirAluno()" class="bg-gray-100 text-gray-400 p-3 rounded-xl hover:text-red-600 transition"><i class="fa fa-trash"></i></button>
+                <button type="button" onclick="salvarAluno()" class="flex-1 bg-[#E30613] text-white font-bold py-3 rounded-xl shadow-lg hover:bg-[#b0050f] transition uppercase">Salvar Alterações</button>
+                <button type="button" id="btnExcluir" onclick="excluirAluno()" class="bg-gray-100 text-gray-400 p-3 rounded-xl hover:text-[#E30613] transition"><i class="fa fa-trash"></i></button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-    const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
+    import { _supabase } from './supabase-config.js';
+    import { authGuard } from './auth-guard.js';
+
+    // Módulos globais para HTML Onclicks
+    window.abrirModalAvulso = abrirModalAvulso;
+    window.abrirGestaoTurmas = abrirGestaoTurmas;
+    window.fecharGestao = fecharGestao;
+    window.arquivarTurma = arquivarTurma;
+    window.excluirTurma = excluirTurma;
+    window.previewFoto = previewFoto;
+    window.abrirModalEdicao = abrirModalEdicao;
+    window.salvarAluno = salvarAluno;
+    window.excluirAluno = excluirAluno;
+    window.fecharModal = fecharModal;
+    window.filtrarAlunos = filtrarAlunos;
+
+    window.logout = async () => {
+        await authGuard.logout();
+    };
 
     // NORMALIZAÇÃO DE NOMES (Remove acentos e prepara para URL)
     function normalizarParaArquivo(texto) {
@@ -308,7 +338,7 @@
     const grid = document.getElementById('alunoGrid');
     grid.innerHTML = alunos.map(aluno => `
         <div class="aluno-card group">
-            <button onclick="abrirModalEdicao('${aluno.id}')" class="btn-edit-float hover:scale-110">
+            <button onclick="abrirModalEdicao('${aluno.id}')" aria-label="Editar aluno ${aluno.nome_completo}" class="btn-edit-float hover:scale-110">
                 <i class="fa fa-pen text-[10px]"></i>
             </button>
             
@@ -346,7 +376,7 @@
                 <span class="text-[11px] font-bold text-gray-700 truncate mr-2">${t}</span>
                 <div class="flex gap-1 flex-shrink-0">
                     <button onclick="arquivarTurma('${t}')" class="bg-blue-600 text-white px-2 py-1 rounded text-[9px] font-bold">ARQUIVAR</button>
-                    <button onclick="excluirTurma('${t}')" class="bg-red-600 text-white px-2 py-1 rounded text-[9px] font-bold">EXCLUIR</button>
+                    <button onclick="excluirTurma('${t}')" class="bg-[#E30613] text-white px-2 py-1 rounded text-[9px] font-bold">EXCLUIR</button>
                 </div>
             </div>
         `).join('') : '<p class="text-center text-xs text-gray-400 py-4">Nenhuma turma ativa encontrada.</p>';
@@ -446,8 +476,14 @@
     }
 
     function fecharModal() { document.getElementById('modalEdicao').classList.add('hidden'); }
-    function logout() { localStorage.clear(); window.location.href = 'index.html'; }
-    window.onload = () => { carregarTurmas(); filtrarAlunos(); };
+    
+    window.onload = async () => { 
+        await authGuard.init();
+        if(!authGuard.isAdmin()) return; // AuthGuard já vai redirecionar nativamente
+
+        await carregarTurmas(); 
+        await filtrarAlunos(); 
+    };
 </script>
 </body>
 

@@ -62,8 +62,8 @@
                     <div class="input-group relative flex items-center">
                         <i class="fas fa-user absolute left-4 text-gray-300 transition-colors"></i>
                         <input type="text" id="cpfInput" required maxlength="14"
-                            oninput="mascaraCPF(this)"
-                            class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all text-sm"
+                            oninput="mascaraCPF(this)" aria-label="Digite seu CPF"
+                            class="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#E30613]/20 focus:border-[#E30613] outline-none transition-all text-sm"
                             placeholder="000.000.000-00">
                     </div>
                 </div>
@@ -72,17 +72,17 @@
                     <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1">Sua Senha</label>
                     <div class="input-group relative flex items-center">
                         <i class="fas fa-lock absolute left-4 text-gray-300 transition-colors"></i>
-                        <input type="password" id="password" required 
-                            class="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all text-sm"
+                        <input type="password" id="password" required  aria-label="Digite sua senha"
+                            class="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-2 focus:ring-[#E30613]/20 focus:border-[#E30613] outline-none transition-all text-sm"
                             placeholder="••••••••">
-                        <button type="button" onclick="toggleSenha()" class="absolute right-4 text-gray-300 hover:text-gray-500">
+                        <button type="button" onclick="toggleSenha()" aria-label="Mostrar ou ocultar senha" class="absolute right-0 top-0 h-full w-12 flex items-center justify-center text-gray-300 hover:text-gray-500">
                             <i id="eyeIcon" class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
 
                 <button type="submit" id="btnLogin"
-                    class="w-full bg-[#E30613] hover:bg-red-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-500/30 transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+                    class="w-full bg-[#E30613] hover:bg-[#b0050f] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#E30613]/30 transition-all active:scale-[0.98] flex justify-center items-center gap-2">
                     <span>ENTRAR NO SISTEMA</span>
                     <i class="fas fa-arrow-right text-xs"></i>
                 </button>
@@ -120,12 +120,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        <script type="module">
+        import { _supabase, cpfToEmail } from './supabase-config.js';
 
-        function toggleSenha() {
+        // Anexando funções globais para HTML
+        window.toggleSenha = function() {
             const input = document.getElementById('password');
             const icon = document.getElementById('eyeIcon');
             if (input.type === "password") {
@@ -135,67 +134,61 @@
                 input.type = "password";
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
-        }
+        };
 
-        function mascaraCPF(i) {
+        window.mascaraCPF = function(i) {
             let v = i.value.replace(/\D/g, "");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d)/, "$1.$2");
             v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
             i.value = v;
-        }
+        };
 
-        function abrirModalSenha() { document.getElementById('modalSenha').classList.remove('hidden'); }
-        function fecharModalSenha() { document.getElementById('modalSenha').classList.add('hidden'); }
+        window.abrirModalSenha = function() { document.getElementById('modalSenha').classList.remove('hidden'); };
+        window.fecharModalSenha = function() { document.getElementById('modalSenha').classList.add('hidden'); };
 
-        // LOGIN (Mantendo sua lógica funcional)
+        // LOGIN COM SUPABASE AUTH INTEGRADO
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
-            const cpf = document.getElementById('cpfInput').value.replace(/\D/g, "");
+            const cpf = document.getElementById('cpfInput').value;
             const senha = document.getElementById('password').value;
             const btn = document.getElementById('btnLogin');
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> VERIFICANDO...`;
 
-            const { data: usuario, error } = await _supabase
-                .from('usuarios')
-                .select('*')
-                .eq('cpf', cpf)
-                .single();
+            try {
+                // Tenta autenticar via API do Supabase Auth transformando o CPF num e-mail padrão fictício.
+                const userEmail = cpfToEmail(cpf);
+                const { data, error } = await _supabase.auth.signInWithPassword({
+                    email: userEmail,
+                    password: senha,
+                });
 
-            if (error || !usuario) {
-                alert("❌ Usuário não encontrado.");
-                btn.disabled = false;
-                btn.innerHTML = `ENTRAR NO SISTEMA <i class="fas fa-arrow-right text-xs"></i>`;
-                return;
-            }
+                if (error) throw error; // Senha ou usuário incorreto do Supabase Auth.
+                
+                // Em caso de sucesso, enviamos primeiro para view, o auth-guard validará se é admin ou não e deixará ou n a rota de views ativa ou bloqueada,
+                // na página de view o AuthGuard decide os elementos.
+                window.location.href = "view.html"; 
 
-            if (usuario.senha === senha) {
-                localStorage.setItem('usuario_cpf', usuario.cpf);
-                localStorage.setItem('usuario_nome', usuario.nome);
-                window.location.href = "dashboard.html";
-            } else {
-                alert("❌ Senha incorreta!");
+            } catch (err) {
+                console.error(err);
+                alert("❌ Login Invalido! Verifique suas credenciais.");
+            } finally {
                 btn.disabled = false;
                 btn.innerHTML = `ENTRAR NO SISTEMA <i class="fas fa-arrow-right text-xs"></i>`;
             }
         };
 
-        // ALTERAÇÃO DE SENHA (Mantendo sua lógica funcional)
+        // ALTERAÇÃO DE SENHA USANDO UPDATE DO NOVO MODELO (PRECISA SER VIA ADMIN - NO HTML APENAS COMO EXEMPLO CASO HOUVESSE A API EMAIL).
+        // Aqui o reset password não funcionará corretamente para e-mail falso se a API do Supabase exigir verificação real.
+        // O Supabase tem auth.resetPasswordForEmail mas requer que o email possa receber,
+        // Como estamos usando email falso do senai, apenas um Admin pode alterar esta senha logada no Supabase panel.
+        // Aqui atualizaremos SOMENTE a tabela local mas a session não será afetada (É apenas legad).
         document.getElementById('updatePasswordForm').onsubmit = async (e) => {
             e.preventDefault();
-            const cpfParaMudar = document.getElementById('changeCpf').value.replace(/\D/g, "");
-            const nova = document.getElementById('newPassword').value;
-            const confirma = document.getElementById('confirmPassword').value;
-
-            if (nova !== confirma) { alert("As senhas não coincidem!"); return; }
-
-            const { data, error } = await _supabase.from('usuarios').update({ senha: nova }).eq('cpf', cpfParaMudar).select();
-
-            if (error) { alert("Erro ao alterar: " + error.message); } 
-            else if (data.length === 0) { alert("CPF não encontrado no sistema!"); } 
-            else { alert("✅ Senha alterada! Faça o login."); fecharModalSenha(); }
+            alert("Atenção: Use a recuperação de senha via sistema administrativo central do SENAI. Contate seu gestor.");
+            window.fecharModalSenha();
         };
     </script>
 </body>

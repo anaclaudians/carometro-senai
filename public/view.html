@@ -6,9 +6,8 @@
     <title>SENAI - View Alunos</title>
     <link rel="icon" type="image/png" href="imagem/favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         :root { --senai-red: #E30613; }
@@ -65,12 +64,12 @@
             <h1 class="hidden md:block text-sm font-light border-l pl-4 border-white/30">Carômetro Digital</h1>
         </div>
         
-        <div class="flex gap-2">
-            <button onclick="gerarPDF()" class="bg-white/20 hover:bg-white text-white hover:text-red-600 px-3 py-2 rounded-lg text-[10px] font-bold transition flex items-center gap-2">
-                <i class="fa fa-print"></i> PDF
+        <div class="flex gap-1 sm:gap-2">
+            <button onclick="gerarPDF()" aria-label="Gerar PDF da turma" class="bg-white/20 hover:bg-white text-white hover:text-[#E30613] px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition flex items-center gap-2">
+                <i class="fa fa-print"></i> <span class="hidden xs:inline">PDF</span>
             </button>
-            <button onclick="fazerLogout()" class="bg-black/20 hover:bg-black text-white px-3 py-2 rounded-lg text-[10px] font-bold transition flex items-center gap-2">
-                <i class="fa fa-sign-out-alt"></i> SAIR
+            <button onclick="fazerLogout()" aria-label="Sair do sistema" class="bg-black/20 hover:bg-black text-white px-3 py-2 rounded-lg text-[10px] sm:text-xs font-bold transition flex items-center gap-2">
+                <i class="fa fa-sign-out-alt"></i> <span class="hidden xs:inline">SAIR</span>
             </button>
         </div>
     </header>
@@ -79,11 +78,11 @@
         <div class="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
                 <label class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Localizar Aluno</label>
-                <input type="text" id="inputBusca" oninput="filtrarAlunos()" placeholder="Digite o nome..." class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-red-500 transition-all focus:bg-white">
+                <input type="text" id="inputBusca" oninput="filtrarAlunos()" aria-label="Buscar aluno pelo nome" placeholder="Digite o nome..." class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-[#E30613] transition-all focus:bg-white">
             </div>
             <div>
                 <label class="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Turma Ativa</label>
-                <select id="selectTurma" onchange="filtrarAlunos()" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-red-500 cursor-pointer">
+                <select id="selectTurma" onchange="filtrarAlunos()" aria-label="Selecionar turma" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-[#E30613] cursor-pointer">
                     <option value="">Todas as Turmas</option>
                 </select>
             </div>
@@ -108,25 +107,30 @@
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300" onclick="event.stopPropagation()">
             <div class="relative">
                 <img id="zoomFoto" src="" class="w-full h-80 object-cover bg-gray-100">
-                <button onclick="fecharZoom()" class="absolute top-4 right-4 bg-white text-black w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg">&times;</button>
+                <button onclick="fecharZoom()" aria-label="Fechar zoom" class="absolute top-4 right-4 bg-white text-black w-12 h-12 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg">&times;</button>
             </div>
             <div class="p-8 text-center">
                 <h2 id="zoomNome" class="text-xl font-black text-gray-800 uppercase leading-tight mb-1"></h2>
-                <p id="zoomTurma" class="text-xs font-bold text-red-600 uppercase mb-6 tracking-tighter"></p>
+                <p id="zoomTurma" class="text-xs font-bold text-[#E30613] uppercase mb-6 tracking-tighter"></p>
                 <div id="zoomBadges" class="flex flex-wrap justify-center gap-2"></div>
             </div>
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://zdhpyflnyopwhgvbpibf.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_xZGVQv0UWu_cauVfQoiL6Q_RRytQozQ';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="module">
+        import { _supabase } from './supabase-config.js';
+        import { authGuard } from './auth-guard.js';
 
-        function fazerLogout() {
-            localStorage.clear();
-            window.location.href = "index.html";
-        }
+        // Globais para HTML Onclicks
+        window.gerarPDF = gerarPDF;
+        window.fecharZoom = fecharZoom;
+        window.abrirZoom = abrirZoom;
+        window.filtrarAlunos = filtrarAlunos;
+
+        window.fazerLogout = async () => {
+            await authGuard.logout();
+        };
 
         // 1. CARREGAR TURMAS NO SELECT
         async function carregarTurmas() {
@@ -184,24 +188,25 @@
                     const alunoJSON = JSON.stringify(aluno).replace(/'/g, "&apos;");
                     
                     return `
-                        <div class="aluno-card" onclick='abrirZoom(${alunoJSON})'>
+                        <div class="aluno-card" role="button" tabindex="0" onclick='abrirZoom(${alunoJSON})' onkeydown='if(event.key==="Enter") abrirZoom(${alunoJSON})'>
                             <img src="${aluno.foto_url || 'https://via.placeholder.com/150'}" 
+                                 alt="Foto de ${aluno.nome_completo}"
                                  class="foto-redonda ${isEvadido ? 'grayscale opacity-40' : ''}">
                             <h3 class="text-[10px] font-black mt-3 text-center uppercase leading-tight h-6 overflow-hidden">${aluno.nome_completo}</h3>
                             <p class="text-[9px] font-bold text-gray-400 mt-1">${aluno.turma}</p>
                             <div class="flex gap-1 mt-3">
-                                ${aluno.representante ? '<div class="badge-icon bg-blue-600">R</div>' : ''}
-                                ${aluno.pcd_tipo ? '<div class="badge-icon bg-purple-600">P</div>' : ''}
-                                ${aluno.aapm ? '<div class="badge-icon bg-green-600">A</div>' : ''}
-                                ${aluno.npaadc ? '<div class="badge-icon bg-orange-600">N</div>' : ''}
-                                ${aluno.spskills ? '<div class="badge-icon bg-yellow-500">S</div>' : ''}
+                                ${aluno.representante ? '<div class="badge-icon bg-blue-600" aria-label="Representante">R</div>' : ''}
+                                ${aluno.pcd_tipo ? `<div class="badge-icon bg-purple-600" aria-label="PCD: ${aluno.pcd_tipo}">P</div>` : ''}
+                                ${aluno.aapm ? '<div class="badge-icon bg-green-600" aria-label="AAPM">A</div>' : ''}
+                                ${aluno.npaadc ? '<div class="badge-icon bg-orange-600" aria-label="NPAADC">N</div>' : ''}
+                                ${aluno.spskills ? '<div class="badge-icon bg-yellow-500" aria-label="SP Skills">S</div>' : ''}
                             </div>
                             ${isEvadido ? '<div class="status-overlay"><span class="status-tag">EVADIDO</span></div>' : ''}
                         </div>`;
                 }).join('');
 
             } catch (err) {
-                grid.innerHTML = `<div class="col-span-full text-center text-red-500 py-10 font-bold uppercase text-xs">Erro ao conectar com banco de dados</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center text-[#E30613] py-10 font-bold uppercase text-xs">Erro ao conectar com banco de dados</div>`;
                 console.error("Erro Supabase:", err.message);
             }
         }
@@ -296,6 +301,14 @@
 
         // INICIALIZAÇÃO CORRETA
         window.onload = async () => {
+            await authGuard.init();
+            
+            // Controle Administrativo de View (Opcional - Exibe ou esconde botões com base na Role)
+            if(!authGuard.isAdmin()) {
+                // Viewer não gera PDF por segurança e não tem edição.
+                document.querySelector('button[onclick="gerarPDF()"]').style.display = 'none';
+            }
+
             await carregarTurmas(); // Primeiro popula o select
             await filtrarAlunos();  // Depois busca os alunos iniciais
         };
