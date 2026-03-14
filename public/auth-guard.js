@@ -7,8 +7,9 @@ class AuthGuard {
     }
 
     async init() {
-        // 1. Verifica se há sessão ativa no LocalStorage via Supabase Session
+        console.log("AuthGuard: Iniciando verificação de sessão...");
         const { data: { session }, error } = await _supabase.auth.getSession();
+        console.log("AuthGuard: Sessão obtida", { session, error });
         
         if (error || !session) {
             this.requireLogin();

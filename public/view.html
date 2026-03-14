@@ -301,9 +301,9 @@
 
         // INICIALIZAÇÃO CORRETA
         window.onload = async () => {
+            console.log("View: Página carregada, iniciando AuthGuard...");
             await authGuard.init();
-            
-            // Controle Administrativo de View (Opcional - Exibe ou esconde botões com base na Role)
+            console.log("View: AuthGuard OK, carregando dados...");
             if(!authGuard.isAdmin()) {
                 // Viewer não gera PDF por segurança e não tem edição.
                 document.querySelector('button[onclick="gerarPDF()"]').style.display = 'none';
